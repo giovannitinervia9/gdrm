@@ -13,6 +13,10 @@ interpret_formulae(formulae, distrib, data)
 
 \item{data}{A data.frame containign the variables in the formula.}
 }
+\value{
+A list for each parameter of the distribution containing model matrices and penalty matrices
+for each term of the formula
+}
 \description{
 Interpret a formulae
 }
