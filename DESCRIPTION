@@ -1,10 +1,11 @@
 Package: gdrm
-Title: What the Package Does (One Line, Title Case)
+Title: Generalized Distributional Regression Models
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
+    person("Giovanni", "Tinervia", , "giovannitinervia9@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+Description: Fit Generalized Distributional Regression Models in which all the parameters
+of a distribution can be fitted as a function (linear, non linear or both) of covariates.
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
