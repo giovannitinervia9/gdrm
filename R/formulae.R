@@ -37,7 +37,12 @@ classify_term <- function(x) {
 #'
 #' @export
 #' @importFrom stats model.matrix as.formula terms
-build_linear <- function(formula, data) {
+build_linear <- function(formula, data = NULL) {
+
+  if (is.null(data)) {
+    data <- get("data", envir = parent.frame())
+  }
+
   formula <- as.formula(formula)
   X <- model.matrix(formula, data)
   P <- matrix(0, ncol(X), ncol(X))
@@ -55,7 +60,12 @@ build_linear <- function(formula, data) {
 #' @export
 #' @importFrom mgcv s
 #' @importFrom Matrix bdiag
-build_smooth <- function(smooth_term, data) {
+build_smooth <- function(smooth_term, data = NULL) {
+
+  if (is.null(data)) {
+    data <- get("data", envir = parent.frame())
+  }
+
   if (is.character(smooth_term)) {
     smooth_term <- eval(parse(text = smooth_term))
   }
@@ -83,9 +93,33 @@ build_smooth <- function(smooth_term, data) {
 }
 
 
+#' Build non linear components
+#'
+#' @param object A character vector representing a call to [`nl()`] function.
+#' @param data A data.frame containign the variables in the formula for [`nl()`].
+#' @returns An object created by [`nl()`] function.
+#'
+#' @export
+build_nl <- function(object, data = NULL) {
+
+  if (is.null(data)) {
+    data <- get("data", envir = parent.frame())
+  }
+
+  if(!grepl("data", object)) {
+    object <- sub("\\)$", ", data = data)", object)
+  }
+
+  eval(parse(text = object))
+
+
+}
+
+
 #' Interpret a formula
 #'
 #' @param formula An object of class `formula`.
+#' @param force_intercept Logical. If `TRUE` (default) a global intercept is forced to the model if none linear part is present.
 #'
 #' @returns A list of two elements:
 #' \describe{
@@ -94,8 +128,8 @@ build_smooth <- function(smooth_term, data) {
 #' }
 #'
 #' @export
-interpret_formula <- function(formula) {
-  if (gsub(" ", "", trimws(deparse(formula))) == "~1") {
+interpret_formula <- function(formula, force_intercept = TRUE) {
+  if (gsub(" ", "", trimws(deparse1(formula))) == "~1") {
     return(list(
       parts = "~1",
       types = "linear"
@@ -114,6 +148,11 @@ interpret_formula <- function(formula) {
     types <- c("linear", types)
   }
 
+  if(force_intercept & !any(types == "linear")){
+    parts <- c("~1", parts)
+    types <- c("linear", types)
+  }
+
   list(
     parts = parts,
     types = types
@@ -126,14 +165,14 @@ interpret_formula <- function(formula) {
 #' @param formulae A formula with different parts related to different parameters separated by `&` operator.
 #' @param distrib An object of class [distrib].
 #' @param data A data.frame containign the variables in the formula.
-#'
+#' @param force_intercept Logical. If `TRUE` (default) a global intercept is forced to the parameter formula if none linear part is present. See [`interpret_formula()`] for more details.
 #' @returns A list for each parameter of the distribution containing model matrices and penalty matrices
 #' for each term of the formula
 #'
 #' @export
-interpret_formulae <- function(formulae, distrib, data) {
+interpret_formulae <- function(formulae, distrib, data, force_intercept = TRUE) {
   npar <- length(distrib$parameters)
-  fchr <- deparse(formulae)
+  fchr <- deparse1(formulae, width.cutoff = 500)
   f_split <- as.list(trimws(strsplit(fchr, "&")[[1]]))
   nform <- length(f_split)
 
@@ -155,7 +194,7 @@ interpret_formulae <- function(formulae, distrib, data) {
 
   response <- deparse(f_list[[1]][[2]])
 
-  f_int <- lapply(f_list, interpret_formula)
+  f_int <- lapply(f_list, interpret_formula, force_intercept = force_intercept)
 
   f_comp <- vector("list", nform)
   names(f_comp) <- distrib$parameters

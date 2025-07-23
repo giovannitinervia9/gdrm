@@ -1,6 +1,6 @@
 #' Specification of non linear component
 #'
-#' @param formula A only right-sided formula specifying a non linear expression.
+#' @param formula A right-sided formula specifying a non linear expression.
 #' @param parameters A list with elements of the same name of the parameters specifying a vector of lower and upper bounds.
 #' @param data A data.frame containing variables used to compute the non linear function.
 #'
@@ -116,5 +116,6 @@ nl <- function(formula, parameters, data = NULL) {
     }
   )
 
-  list(f = f, jac = jac, hes = hes)
+  list(f = f, jac = jac, hes = hes, 
+    parameters = parameters, pars = pars)
 }

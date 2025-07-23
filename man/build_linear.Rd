@@ -4,7 +4,7 @@
 \alias{build_linear}
 \title{Build linear components}
 \usage{
-build_linear(formula, data)
+build_linear(formula, data = NULL)
 }
 \arguments{
 \item{formula}{A formula specifying a linear predictor.}

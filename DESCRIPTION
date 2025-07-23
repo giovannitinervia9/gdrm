@@ -3,7 +3,7 @@ Title: Generalized Distributional Regression Models
 Version: 0.0.0.9000
 Authors@R: 
     person("Giovanni", "Tinervia", , "giovannitinervia9@gmail.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "https://orcid.org/0009-0000-3928-2998"))
 Description: Fits Generalized Distributional Regression Models in which all the parameters of a distribution can be fitted as a function (linear, non linear or both) of covariates.
 License: GPL (>= 3)
 Encoding: UTF-8

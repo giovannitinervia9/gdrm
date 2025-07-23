@@ -7,7 +7,7 @@
 nl(formula, parameters, data = NULL)
 }
 \arguments{
-\item{formula}{A only right-sided formula specifying a non linear expression.}
+\item{formula}{A right-sided formula specifying a non linear expression.}
 
 \item{parameters}{A list with elements of the same name of the parameters specifying a vector of lower and upper bounds.}
 

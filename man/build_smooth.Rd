@@ -4,7 +4,7 @@
 \alias{build_smooth}
 \title{Build smooth components}
 \usage{
-build_smooth(smooth_term, data)
+build_smooth(smooth_term, data = NULL)
 }
 \arguments{
 \item{smooth_term}{A smooth term specified by \code{\link[mgcv:s]{mgcv::s()}}.}

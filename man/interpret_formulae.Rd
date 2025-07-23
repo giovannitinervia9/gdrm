@@ -4,7 +4,7 @@
 \alias{interpret_formulae}
 \title{Interpret a formulae}
 \usage{
-interpret_formulae(formulae, distrib, data)
+interpret_formulae(formulae, distrib, data, force_intercept = TRUE)
 }
 \arguments{
 \item{formulae}{A formula with different parts related to different parameters separated by \code{&} operator.}
@@ -12,6 +12,8 @@ interpret_formulae(formulae, distrib, data)
 \item{distrib}{An object of class \link{distrib}.}
 
 \item{data}{A data.frame containign the variables in the formula.}
+
+\item{force_intercept}{Logical. If \code{TRUE} (default) a global intercept is forced to the parameter formula if none linear part is present. See \code{\link[=interpret_formula]{interpret_formula()}} for more details.}
 }
 \value{
 A list for each parameter of the distribution containing model matrices and penalty matrices
