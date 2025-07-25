@@ -11,6 +11,32 @@ gdrm_control <- function(force_intercept = TRUE) {
 }
 
 
+#' Predicted values on link scale
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @return A list of predicted values on link scale.
+#' @export
+gdrm_predict <- function(mod_comp) {
+  lapply(mod_comp, function(mod_par) {
+    comps <- lapply(mod_par, function(comp) comp$fitted)
+    Reduce(`+`, comps)
+  })
+}
+
+
+#' Predicted values on parameter scale
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param distrib A `[distrib]` object.
+#' @return A list of predicted values on parameter scale.
+#' @export
+gdrm_fitted <- function(mod_comp, distrib) {
+  pred <- gdrm_predict(mod_comp)
+  link <- distrib$link_list
+  Map(function(eta, link) link$theta.eta(eta), eta = pred, link = link)
+}
+
+
 #' Generalized distributional regression models
 #' Fits generalized distributional regression models, which are models in which any parameters of a distribution can be modelled as a function (linear, non-linear or both) of covariates.
 #'
@@ -36,14 +62,10 @@ gdrm <- function(
   # get npar for each model parameter
   npars <- lapply(mod_comp, function(f) sum(sapply(f, function(ff) length(ff$par))))
 
-  # need a function to compute fitted.values
-  gdrm_fitted <- function(mod_comp) {
-  }
-
-  # need a function to build gradient
+  # function to build gradient
   grad_dist <- distrib$grad
 
-  # need a function to build hessian
+  # function to build hessian
 
 
 }
