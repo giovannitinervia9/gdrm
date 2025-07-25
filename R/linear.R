@@ -17,5 +17,6 @@ build_linear <- function(formula, data = NULL) {
   formula <- as.formula(formula)
   X <- model.matrix(formula, data)
   P <- matrix(0, ncol(X), ncol(X))
-  list(X = X, P = P)
+  r <- list(X = X, P = P)
+  class(r) <- "linear"
 }

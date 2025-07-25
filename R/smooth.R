@@ -37,5 +37,6 @@ build_smooth <- function(smooth_term, data = NULL) {
   P <- as.matrix(Matrix::bdiag(Plist))
   id <- rep(1:nbasis, sapply(Xlist, ncol))
   colnames(P) <- rownames(P) <- colnames(X)
-  list(X = X, P = P, id = id)
+  r <- list(X = X, P = P, id = id)
+  class(r) <- "smooth"
 }

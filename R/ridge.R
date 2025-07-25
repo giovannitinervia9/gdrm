@@ -21,7 +21,6 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
   vars <- as.list(vars)[-1]
   vars <- vapply(vars, deparse, character(1))
   num_vars <- vars[sapply(data[vars], class) %in% c("numeric", "integer")]
-  fac_vars <- setdiff(vars, num_vars)
   
   if (scale_numerical) {
     num_scaled <- scale(data[num_vars])
@@ -33,13 +32,13 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
     scale <- rep(1, length(num_vars))
     names(center) <- names(scale) <- num_vars
   }
-   
-  
 
   X <- model.matrix(formula, data)[,-1]
 
   P <- diag(1, ncol(X), ncol(X))
-  list(X = X, P = P, scale_info = list(center = center, scale = scale))
+  r <- list(X = X, P = P, scale_info = list(center = center, scale = scale))
+  class(r) <- "ridge"
+  r
 }
 
 

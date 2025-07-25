@@ -116,8 +116,12 @@ nl <- function(formula, parameters, data = NULL) {
     }
   )
 
-  list(f = f, jac = jac, hes = hes, 
-    parameters = parameters, pars = pars)
+  P <- matrix(0, npars, npars)
+
+  r <- list(f = f, jac = jac, hes = hes, 
+    parameters = parameters, pars = pars, P = P)
+  class(r) <- "nl"
+  r
 }
 
 
