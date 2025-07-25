@@ -70,6 +70,7 @@ Those functions take two arguments:
 \item \code{x}: a numeric vector of \code{n} elements containing the values at which the functions are to be computed;
 \item \code{par}: a list of \code{length(parameters)} element, one for each parameter of the model; those could be either single element vectors of numeric vectors of \code{n} elements.
 }}
+#' \item{\code{starting_values}}{List containing starting values for model parameters.}
 \item{\code{distrib_args}}{List containing distribution specific arguments.}
 }
 }
