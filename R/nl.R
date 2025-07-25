@@ -119,3 +119,24 @@ nl <- function(formula, parameters, data = NULL) {
   list(f = f, jac = jac, hes = hes, 
     parameters = parameters, pars = pars)
 }
+
+
+#' Build non linear components
+#'
+#' @param object A character vector representing a call to [`nl()`] function.
+#' @param data A data.frame containign the variables in the formula for [`nl()`].
+#' @returns An object created by [`nl()`] function.
+#'
+#' @export
+build_nl <- function(object, data = NULL) {
+
+  if (is.null(data)) {
+    data <- get("data", envir = parent.frame())
+  }
+
+  if(!grepl("data", object)) {
+    object <- sub("\\)$", ", data = data)", object)
+  }
+
+  eval(parse(text = object))
+}
