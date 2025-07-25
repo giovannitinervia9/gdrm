@@ -2,6 +2,7 @@
 
 export(build_linear)
 export(build_nl)
+export(build_ridge)
 export(build_smooth)
 export(classify_term)
 export(interpret_formula)

@@ -89,6 +89,7 @@ interpret_formulae <- function(formulae, distrib, data, force_intercept = TRUE) 
 
   if (nform < npar) {
     f_split[(nform + 1):npar] <- "~1"
+    nform <- length(f_split)
   }
 
   names(f_split) <- distrib$parameters
