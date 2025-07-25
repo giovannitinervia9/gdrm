@@ -43,7 +43,7 @@ gdrm_fitted <- function(mod_comp, distrib) {
 #' @param formulae A `formulae` object, which consists of formulas for different parameters of the model separated by `&` operator.
 #' @param distrib A `[distrib]` object specifying the distribution assumed for the response variable.
 #' @param data A `data.frame`.
-#' @param gdrm_control_list. A list created by `[gdrm_control()]` function.
+#' @param gdrm_control_list A list created by `[gdrm_control()]` function.
 #'
 #' @returns An object of class `gdrm`.
 #'

@@ -93,7 +93,7 @@ NULL
 #' and pdf:
 #' \deqn{f(y) = \dfrac{1}{\sqrt{2 \pi \sigma^2}} \exp \left\{-\dfrac{(y - \mu)^2}{2\sigma^2}\right\}}
 #' @export
-#' @importFrom stats rnorm
+#' @importFrom stats rnorm var
 normal1 <- function(link_mu = "identity", link_sigma2 = "log") {
   distrib <- "normal1"
 
@@ -299,7 +299,7 @@ normal1 <- function(link_mu = "identity", link_sigma2 = "log") {
 #' and pdf:
 #' \deqn{f(y) = \dfrac{1}{\sqrt{2 \pi} \sigma} \exp \left\{-\dfrac{1}{2}\left(\dfrac{y - \mu}{\sigma}\right)^2\right\}}
 #' @export
-#' @importFrom stats rnorm
+#' @importFrom stats rnorm sd
 normal2 <- function(link_mu = "identity", link_sigma = "log") {
   distrib <- "normal2"
 
@@ -505,7 +505,7 @@ normal2 <- function(link_mu = "identity", link_sigma = "log") {
 #' and pdf:
 #' \deqn{f(y) = \sqrt{\dfrac{\tau^2}{2 \pi}} \exp \left\{-\dfrac{\tau^2 (y - \mu)^2}{2}\right\}}
 #' @export
-#' @importFrom stats rnorm
+#' @importFrom stats rnorm var
 normal3 <- function(link_mu = "identity", link_tau2 = "log") {
   distrib <- "normal3"
 

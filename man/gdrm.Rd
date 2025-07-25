@@ -13,6 +13,8 @@ gdrm(formulae, distrib = normal1(), data, gdrm_control_list = gdrm_control())
 \item{distrib}{A \verb{[distrib]} object specifying the distribution assumed for the response variable.}
 
 \item{data}{A \code{data.frame}.}
+
+\item{gdrm_control_list.}{A list created by \verb{[gdrm_control()]} function.}
 }
 \value{
 An object of class \code{gdrm}.
