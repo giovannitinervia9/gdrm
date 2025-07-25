@@ -14,7 +14,7 @@ gdrm(formulae, distrib = normal1(), data, gdrm_control_list = gdrm_control())
 
 \item{data}{A \code{data.frame}.}
 
-\item{gdrm_control_list.}{A list created by \verb{[gdrm_control()]} function.}
+\item{gdrm_control_list}{A list created by \verb{[gdrm_control()]} function.}
 }
 \value{
 An object of class \code{gdrm}.
