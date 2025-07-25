@@ -30,8 +30,20 @@ gdrm <- function(
   
   force_intercept <- gdrm_control_list$force_intercept
 
-  # interpret formula
-  form_int <- interpret_formulae(formulae, distrib, data, force_intercept = force_intercept)
+  # get model components
+  mod_comp <- interpret_formulae(formulae, distrib, data, force_intercept = force_intercept)
+
+  # get npar for each model parameter
+  npars <- lapply(mod_comp, function(f) sum(sapply(f, function(ff) length(ff$par))))
+
+  # need a function to compute fitted.values
+  gdrm_fitted <- function(mod_comp) {
+  }
+
+  # need a function to build gradient
+  grad_dist <- distrib$grad
+
+  # need a function to build hessian
 
 
 }

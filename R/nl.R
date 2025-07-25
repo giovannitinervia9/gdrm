@@ -118,11 +118,12 @@ nl <- function(formula, parameters, data = NULL) {
 
   P <- matrix(0, npars, npars)
 
-  par <- numeric(npars)
+  par <- sapply(parameters, function(x) x[1]) + 1e-10
   names(par) <- pars
-
+  fitted = drop(f(par))
   r <- list(f = f, jac = jac, hes = hes, 
-    parameters = parameters, par = par, P = P)
+    parameters = parameters, par = par, P = P,
+  fitted = fitted)
   class(r) <- "nl"
   r
 }
