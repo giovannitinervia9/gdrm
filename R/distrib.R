@@ -64,6 +64,7 @@
 #'   \item `x`: a numeric vector of `n` elements containing the values at which the functions are to be computed;
 #'   \item `par`: a list of `length(parameters)` element, one for each parameter of the model; those could be either single element vectors of numeric vectors of `n` elements.
 #' }}
+#' #' \item{`starting_values`}{List containing starting values for model parameters.}
 #' \item{`distrib_args`}{List containing distribution specific arguments.}
 #' }
 #'
@@ -242,6 +243,10 @@ normal1 <- function(link_mu = "identity", link_sigma2 = "log") {
     exp((1i) * mu * x - sigma2 * x^2 / 2)
   }
 
+  starting_values <- function(x){
+    list(mu = mean(x), sigma2 = var(x))
+  }
+
   r <- list(
     distrib = distrib,
     link_list = link_list,
@@ -265,6 +270,7 @@ normal1 <- function(link_mu = "identity", link_sigma2 = "log") {
     mgf = mgf,
     cml = cml,
     cf = cf,
+    starting_values = starting_values,
     distrib_args = NULL
   )
 
@@ -443,6 +449,10 @@ normal2 <- function(link_mu = "identity", link_sigma = "log") {
     exp((1i) * mu * x - sigma^2 * x^2 / 2)
   }
 
+  starting_values <- function(x){
+    list(mu = mean(x), sigma = sd(x))
+  }
+
   r <- list(
     distrib = distrib,
     link_list = link_list,
@@ -466,6 +476,7 @@ normal2 <- function(link_mu = "identity", link_sigma = "log") {
     mgf = mgf,
     cml = cml,
     cf = cf,
+    starting_values = starting_values,
     distrib_args = NULL
   )
 
@@ -644,6 +655,10 @@ normal3 <- function(link_mu = "identity", link_tau2 = "log") {
     exp((1i) * mu * x - (1 / tau2) * x^2 / 2)
   }
 
+  starting_values <- function(x){
+    list(mu = mean(x), tau2 = 1/var(x))
+  }
+
   r <- list(
     distrib = distrib,
     link_list = link_list,
@@ -667,6 +682,7 @@ normal3 <- function(link_mu = "identity", link_tau2 = "log") {
     mgf = mgf,
     cml = cml,
     cf = cf,
+    starting_values = starting_values,
     distrib_args = NULL
   )
 

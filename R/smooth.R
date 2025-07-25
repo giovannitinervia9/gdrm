@@ -34,9 +34,12 @@ build_smooth <- function(smooth_term, data = NULL) {
     Plist[[i]] <- Pj
   }
   X <- do.call(cbind, Xlist)
+  par <- numeric(ncol(X))
+  names(par) <- colnames(X)
   P <- as.matrix(Matrix::bdiag(Plist))
   id <- rep(1:nbasis, sapply(Xlist, ncol))
   colnames(P) <- rownames(P) <- colnames(X)
-  r <- list(X = X, P = P, id = id)
+  r <- list(X = X, P = P, par = par, id = id)
   class(r) <- "smooth"
+  r
 }

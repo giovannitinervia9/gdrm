@@ -16,7 +16,10 @@ build_linear <- function(formula, data = NULL) {
 
   formula <- as.formula(formula)
   X <- model.matrix(formula, data)
+  par <- numeric(ncol(X))
+  names(par) <- colnames(X)
   P <- matrix(0, ncol(X), ncol(X))
-  r <- list(X = X, P = P)
+  r <- list(X = X, P = P, par = par)
   class(r) <- "linear"
+  r
 }

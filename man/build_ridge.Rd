@@ -4,17 +4,15 @@
 \alias{build_ridge}
 \title{Build ridge components}
 \usage{
-build_ridge(formula, scale_numerical = TRUE, data = NULL)
+build_ridge(object, data = NULL)
 }
 \arguments{
-\item{formula}{A formula specifying a linear predictor to be penalized with ridge penalty.}
+\item{object}{A character vector representing a call to \code{\link[=ridge]{ridge()}} function.}
 
-\item{scale_numerical}{Logical. If \code{TRUE} (default), numerical predictors are standardized.}
-
-\item{data}{A data.frame containign the variables in the formula.}
+\item{data}{A data.frame containign the variables in the formula for \code{\link[=ridge]{ridge()}}.}
 }
 \value{
-A list containing the \code{model.matrix} \code{X}, the diagonal penalty matrix \code{P} and center and scale values of numerical variables saved in the list \code{scale_info}.
+An object created by \code{\link[=ridge]{ridge()}} function.
 }
 \description{
 Build ridge components

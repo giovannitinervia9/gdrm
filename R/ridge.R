@@ -35,8 +35,11 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
 
   X <- model.matrix(formula, data)[,-1]
 
+  par <- numeric(ncol(X))
+  names(par) <- colnames(X)
+
   P <- diag(1, ncol(X), ncol(X))
-  r <- list(X = X, P = P, scale_info = list(center = center, scale = scale))
+  r <- list(X = X, P = P, par = par, scale_info = list(center = center, scale = scale))
   class(r) <- "ridge"
   r
 }
