@@ -41,7 +41,11 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
   P <- diag(1, ncol(X), ncol(X))
   fitted <- drop(X%*%par)
 
-  r <- list(X = X, P = P, par = par, fitted = fitted, scale_info = list(center = center, scale = scale))
+  r <- list(X = X,
+    P = P,
+    par = par,
+    fitted = fitted,
+    scale_info = list(center = center, scale = scale))
   class(r) <- "ridge"
   r
 }

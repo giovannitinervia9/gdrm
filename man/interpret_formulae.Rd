@@ -7,7 +7,7 @@
 interpret_formulae(formulae, distrib, data, force_intercept = TRUE)
 }
 \arguments{
-\item{formulae}{A formula with different parts related to different parameters separated by \code{&} operator.}
+\item{formulae}{A \code{formulae} object, which consists of formulas for different parameters of the model separated by \code{&} operator.}
 
 \item{distrib}{An object of class \link{distrib}.}
 

@@ -73,7 +73,7 @@ interpret_formula <- function(formula, force_intercept = TRUE) {
 
 #' Interpret a formulae
 #'
-#' @param formulae A formula with different parts related to different parameters separated by `&` operator.
+#' @param formulae A `formulae` object, which consists of formulas for different parameters of the model separated by `&` operator.
 #' @param distrib An object of class [distrib].
 #' @param data A data.frame containign the variables in the formula.
 #' @param force_intercept Logical. If `TRUE` (default) a global intercept is forced to the parameter formula if none linear part is present. See [`interpret_formula()`] for more details.
@@ -123,4 +123,21 @@ interpret_formulae <- function(formulae, distrib, data, force_intercept = TRUE) 
   }
 
   f_comp
+}
+
+
+
+#' Extract response variable from a formula
+#'
+#' @param formulae A `formulae` object, which consists of formulas for different parameters of the model separated by `&` operator.
+#' @param data A data.frame from which the response variable has to be extracted.
+#'
+#' @returns A vector containing the response variable.
+#'
+#' @export
+get_response <- function(formulae, data) {
+  fchr <- deparse1(formulae, width.cutoff = 500)
+  f1 <- as.list(trimws(strsplit(fchr, "&")[[1]]))[[1]]
+  response <- deparse(as.formula(f1)[[2]])
+  data[[response]]
 }

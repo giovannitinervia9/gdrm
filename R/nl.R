@@ -96,7 +96,7 @@ nl <- function(formula, parameters, data = NULL) {
       )
       expr_h <- paste0(
         expr_h,
-        "; apply(hh, 1, FUN = function(x) matrix(x, npars, npars, byrow = TRUE), simplify = FALSE)"
+        "; apply(hh, 1, FUN = function(x) matrix(x, npars, npars, byrow = TRUE, dimnames = list(pars, pars)), simplify = FALSE)"
       )
       create_function(expr_h, data)
     },
@@ -117,13 +117,19 @@ nl <- function(formula, parameters, data = NULL) {
   )
 
   P <- matrix(0, npars, npars)
-
+  
+  # initialize parameters value
   par <- sapply(parameters, function(x) x[1]) + 1e-10
   names(par) <- pars
   fitted = drop(f(par))
-  r <- list(f = f, jac = jac, hes = hes, 
-    parameters = parameters, par = par, P = P,
-  fitted = fitted)
+  
+  r <- list(f = f,
+    jac = jac,
+    hes = hes, 
+    parameters = parameters,
+    par = par,
+    P = P,
+    fitted = fitted)
   class(r) <- "nl"
   r
 }
