@@ -67,11 +67,21 @@ nl <- function(formula, parameters, data = NULL) {
   jac <- tryCatch(
     expr = {
       expr_j <- Deriv::Deriv(f = ff, x = pars, nderiv = 1, combine = "cbind")
+
+      if (!grepl("cbind", expr_j)) {
+        expr_j <- paste0("cbind(", expr_j, ")")
+      }
+
+      expr_j <- sub("cbind", "jj <- cbind", expr_j)
+
       expr_j <- paste0(
         paste0(paste0(assign_str, collapse = ";"), ";"),
         expr_j,
         collapse = ";"
       )
+
+      expr_j <- paste0(expr_j, "; colnames(jj) <- pars; jj")
+
       create_function(expr_j, data)
     },
     error = function(e) {
@@ -87,6 +97,11 @@ nl <- function(formula, parameters, data = NULL) {
   hes <- tryCatch(
     expr = {
       expr_h <- Deriv::Deriv(f = ff, x = pars, nderiv = 2, combine = "cbind")
+
+      if (!grepl("cbind", expr_h)) {
+        expr_h <- paste0("cbind(", expr_h, ")")
+      }
+      
       expr_h <- sub("cbind", "hh <- cbind", expr_h)
 
       expr_h <- paste0(
@@ -96,7 +111,9 @@ nl <- function(formula, parameters, data = NULL) {
       )
       expr_h <- paste0(
         expr_h,
-        "; apply(hh, 1, FUN = function(x) matrix(x, npars, npars, byrow = TRUE, dimnames = list(pars, pars)), simplify = FALSE)"
+        "; hh <- simplify2array(apply(hh, 1, FUN = function(x) matrix(x, npars, npars, byrow = TRUE), simplify = FALSE));",
+        "if (is.null(dim(hh))) hh <- array(hh, dim = c(1, 1, length(hh)));",
+        "dimnames(hh) <- list(pars, pars, NULL); hh"
       )
       create_function(expr_h, data)
     },
@@ -109,7 +126,7 @@ nl <- function(formula, parameters, data = NULL) {
           f_temp <- create_function(expr, xj)
           hlist[[i]] <- numDeriv::hessian(func = f_temp, x = par)
         }
-        hlist
+        simplify2array(hlist)
       }
       environment(hes) <- environment()
       hes
