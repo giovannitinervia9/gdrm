@@ -151,6 +151,90 @@ gdrm_update_coef <- function(par, mod_comp) {
 }
 
 
+#' Map coefficients of the model to unconstrained space
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param map_functions A list of functions to map parameters from constrained to real line created by [`make_map_function()`].
+#'
+#' @returns A vector containing mapped coefficients of the gdrm model.
+#'
+#' @export
+gdrm_map_coef <- function(mod_comp, map_functions) {
+  par <- lapply(gdrm_coef(mod_comp), unlist)
+  map <- lapply(map_functions, function(map) map$map)
+  unlist(Map(function(map, par) map(par), map, par))
+}
+
+
+#' Adds mapped coefficients to a gdrm model
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param map_functions A list of functions to map parameters from constrained to real line created by [`make_map_function()`].
+#'
+#' @returns The `mod_comp` passed as input with added the `par_map` object to each component of the model parameters.
+#'
+#' @export
+gdrm_add_map_coef <- function(mod_comp, map_functions) {
+  # Create a deep copy of mod_comp to avoid modifying the original
+  updated_mod <- mod_comp
+  par <- gdrm_map_coef(updated_mod, map_functions)
+  
+  # Initialize parameter index counter
+  par_idx <- 1
+  
+  # Function to get the total number of parameters needed
+  count_parameters <- function(mod_comp) {
+    total_params <- 0
+    
+    for (i in 1:length(mod_comp)) {
+      comp <- mod_comp[[i]]
+      
+      for (j in 1:length(comp)) {
+        build <- comp[[j]]
+        # Each build always has a 'par' element
+        total_params <- total_params + length(build$par)
+      }
+    }
+    
+    return(total_params)
+  }
+  
+  # Check if the parameter vector length matches expected
+  expected_params <- count_parameters(mod_comp)
+  if (length(par) != expected_params) {
+    stop(paste("Parameter vector length (", length(par), 
+               ") does not match expected number of parameters (", 
+               expected_params, ")", sep = ""))
+  }
+  
+  # Update parameters - simplified since each component always has 'par'
+  for (i in 1:length(updated_mod)) {
+    comp <- updated_mod[[i]]
+    
+    for (j in 1:length(comp)) {
+      build <- comp[[j]]
+      
+      # Each build always has a 'par' element
+      n_params <- length(build$par)
+      if (n_params > 0) {
+        # Extract the corresponding slice from par
+        new_params <- par[par_idx:(par_idx + n_params - 1)]
+        
+        # Update the parameters (keep names if they exist)
+        if (!is.null(names(build$par))) {
+          names(new_params) <- names(build$par)
+        }
+        
+        updated_mod[[i]][[j]]$par_map <- new_params
+        par_idx <- par_idx + n_params
+      }
+    }
+  }
+  
+  return(updated_mod)
+}
+
+
 #' Hyperparameters of gdrm model
 #'
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
