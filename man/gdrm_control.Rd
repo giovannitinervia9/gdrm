@@ -4,10 +4,12 @@
 \alias{gdrm_control}
 \title{Control options for gdrm()}
 \usage{
-gdrm_control(force_intercept = TRUE)
+gdrm_control(force_intercept = TRUE, expected = TRUE)
 }
 \arguments{
 \item{force_intercept}{Logical. If \code{TRUE} (default) a global intercept is forced to the model if none linear part is present.}
+
+\item{expected}{Logical. If \code{TRUE} (default) use expected Fisher Information if available.}
 }
 \value{
 A list of class \code{gdrm_control}.

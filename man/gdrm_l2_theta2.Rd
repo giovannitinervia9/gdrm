@@ -4,7 +4,7 @@
 \alias{gdrm_l2_theta2}
 \title{Hessian of the loglikelihood function wrt theta of gdrm model}
 \usage{
-gdrm_l2_theta2(response, mod_comp, distrib)
+gdrm_l2_theta2(response, mod_comp, distrib, expected = TRUE)
 }
 \arguments{
 \item{response}{Response variable.}
@@ -12,6 +12,8 @@ gdrm_l2_theta2(response, mod_comp, distrib)
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{distrib}{A \verb{[distrib]} object.}
+
+\item{expected}{Logical. If \code{TRUE} (default) use expected Fisher Information if available.}
 }
 \value{
 A list containing the hessian of the loglikelihood wrt eta for each model parameter.

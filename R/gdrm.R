@@ -1,11 +1,13 @@
 #' Control options for gdrm()
 #' @param force_intercept Logical. If `TRUE` (default) a global intercept is forced to the model if none linear part is present.
-#'
+#' @param expected Logical. If `TRUE` (default) use expected Fisher Information if available.
 #' @returns A list of class `gdrm_control`.
 #'
 #' @export
-gdrm_control <- function(force_intercept = TRUE) {
-  r <- list(force_intercept = force_intercept)
+gdrm_control <- function(force_intercept = TRUE, expected = TRUE) {
+  r <- list(
+    force_intercept = force_intercept,
+    expected = expected)
   class(r) <- "gdrm_control"
   r
 }
@@ -343,10 +345,11 @@ gdrm_l_theta <- function(response, mod_comp, distrib) {
 #' @param response Response variable.
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param distrib A `[distrib]` object.
+#' @param expected Logical. If `TRUE` (default) use expected Fisher Information if available.
 #' @return A list containing the hessian of the loglikelihood wrt eta for each model parameter.
 #' @export
-gdrm_l2_theta2 <- function(response, mod_comp, distrib) {
-  distrib$hess(response, gdrm_fitted(mod_comp, distrib), sum = FALSE)
+gdrm_l2_theta2 <- function(response, mod_comp, distrib, expected = TRUE) {
+  distrib$hess(response, gdrm_fitted(mod_comp, distrib), sum = FALSE, expected = expected)
 }
 
 
@@ -491,13 +494,14 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param sum Logical. If `TRUE` (default) the hessian is returned, else if `FALSE` the individual contributions to the hessian are returned.
 #' @param penalty Logical. If `TRUE` (default) the penalized hessian is returned.
+#' @param expected Logical. If `TRUE` (default) use expected Fisher Information if available.
 #'
 #' @returns Hessian of loglikelihood function.
 #'
 #' @export
-gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
+gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, expected = TRUE) {
   l_theta <- gdrm_l_theta(response, mod_comp, distrib)
-  l2_theta2 <- gdrm_l2_theta2(response, mod_comp, distrib)
+  l2_theta2 <- gdrm_l2_theta2(response, mod_comp, distrib, expected = expected)
 
   theta_eta <- gdrm_theta_eta(mod_comp, distrib)
   theta2_eta2 <- gdrm_theta2_eta2(mod_comp, distrib)
@@ -671,6 +675,7 @@ gdrm <- function(
   gdrm_control_list = gdrm_control()
 ) {
   force_intercept <- gdrm_control_list$force_intercept
+  expected <- gdrm_control_list$expected
 
   # get response
   response <- get_response(formulae, data)

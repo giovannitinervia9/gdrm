@@ -189,16 +189,24 @@ normal1 <- function(link_mu = "identity", link_sigma2 = "log") {
     }
   }
 
-  hess <- function(x, par, sum = TRUE) {
+  hess <- function(x, par, sum = TRUE, expected = TRUE) {
     mu <- par[[1]]
     sigma2 <- par[[2]]
 
     n <- length(x)
     hess <- array(0, dim = c(2, 2, n))
 
-    hess[1, 1, ] <- -1 / sigma2
-    hess[2, 2, ] <- (sigma2 - 2 * (x - mu)^2) / (2 * sigma2^3)
-    hess[1, 2, ] <- hess[2, 1, ] <- -(x - mu) / sigma2^2
+    if (expected) {
+      hess[1, 1, ] <- -1 / sigma2
+      hess[2, 2, ] <- - 1 / (2 * sigma2^2)
+      hess[1, 2, ] <- hess[2, 1, ] <- 0
+    } else {
+      hess[1, 1, ] <- -1 / sigma2
+      hess[2, 2, ] <- (sigma2 - 2 * (x - mu)^2) / (2 * sigma2^3)
+      hess[1, 2, ] <- hess[2, 1, ] <- -(x - mu) / sigma2^2      
+    }
+
+    
 
     if (sum) {
       apply(hess, c(1, 2), sum)
@@ -395,16 +403,25 @@ normal2 <- function(link_mu = "identity", link_sigma = "log") {
     }
   }
 
-  hess <- function(x, par, sum = TRUE) {
+  hess <- function(x, par, sum = TRUE, expected = TRUE) {
     mu <- par[[1]]
     sigma <- par[[2]]
 
     n <- length(x)
     hess <- array(0, dim = c(2, 2, n))
 
-    hess[1, 1, ] <- -1 / sigma^2
-    hess[2, 2, ] <- (sigma^2 - 3 * (x - mu)^2) / (sigma^4)
-    hess[1, 2, ] <- hess[2, 1, ] <- -2 * (x - mu) / sigma^3
+    if (expected) {
+      hess[1, 1, ] <- -1 / sigma^2
+      hess[2, 2, ] <- - 2 / (sigma^2)
+      hess[1, 2, ] <- hess[2, 1, ] <- 0
+    } else {
+      hess[1, 1, ] <- -1 / sigma^2
+      hess[2, 2, ] <- (sigma^2 - 3 * (x - mu)^2) / (sigma^4)
+      hess[1, 2, ] <- hess[2, 1, ] <- -2 * (x - mu) / sigma^3
+
+    }
+
+    
 
     if (sum) {
       apply(hess, c(1, 2), sum)
@@ -601,16 +618,25 @@ normal3 <- function(link_mu = "identity", link_tau2 = "log") {
     }
   }
 
-  hess <- function(x, par, sum = TRUE) {
+  hess <- function(x, par, sum = TRUE, expected = TRUE) {
     mu <- par[[1]]
     tau2 <- par[[2]]
 
     n <- length(x)
     hess <- array(0, dim = c(2, 2, n))
 
-    hess[1, 1, ] <- -tau2
-    hess[2, 2, ] <- -1 / (2 * tau2^2)
-    hess[1, 2, ] <- hess[2, 1, ] <- x - mu
+    if (expected) {
+      hess[1, 1, ] <- -tau2
+      hess[2, 2, ] <- -1 / (2 * tau2^2)
+      hess[1, 2, ] <- hess[2, 1, ] <- 0
+
+    } else {
+      hess[1, 1, ] <- -tau2
+      hess[2, 2, ] <- -1 / (2 * tau2^2)
+      hess[1, 2, ] <- hess[2, 1, ] <- x - mu
+    }
+
+    
 
     if (sum) {
       apply(hess, c(1, 2), sum)
