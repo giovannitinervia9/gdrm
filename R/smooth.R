@@ -49,6 +49,7 @@ build_smooth <- function(smooth_term, data = NULL) {
   out <- list(X = X,
     P = Plist,
     par = par,
+    parameters = colnames(X),
     hyperpar = hyperpar,
     fitted = fitted,
     id = id,

@@ -24,6 +24,7 @@ build_linear <- function(formula, data = NULL) {
   r <- list(X = X,
     P = P,
     par = par,
+    parameters = colnames(X),
     hyperpar = hyperpar,
     fitted = fitted)
   class(r) <- "linear"

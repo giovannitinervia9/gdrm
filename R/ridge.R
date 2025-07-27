@@ -45,6 +45,7 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
   r <- list(X = X,
     P = P,
     par = par,
+    parameters = colnames(X),
     hyperpar = hyperpar,
     fitted = fitted,
     scale_info = list(center = center, scale = scale))
