@@ -90,11 +90,11 @@ gdrm_l2_theta2 <- function(response, mod_comp, distrib) {
 #' @export
 gdrm_theta_eta <- function(mod_comp, distrib) {
   Map(
-    function(link, theta) {
-      link$theta.eta(theta)
+    function(link, eta) {
+      link$theta.eta(eta)
     },
     link = distrib$link_list,
-    theta = gdrm_fitted(mod_comp, distrib)
+    eta = gdrm_predict(mod_comp)
   )
 }
 
@@ -107,11 +107,11 @@ gdrm_theta_eta <- function(mod_comp, distrib) {
 #' @export
 gdrm_theta2_eta2 <- function(mod_comp, distrib) {
   Map(
-    function(link, theta) {
-      link$theta2.eta2(theta)
+    function(link, eta) {
+      link$theta2.eta2(eta)
     },
     link = distrib$link_list,
-    theta = gdrm_fitted(mod_comp, distrib)
+    eta = gdrm_predict(mod_comp)
   )
 }
 
