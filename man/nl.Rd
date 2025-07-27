@@ -9,16 +9,21 @@ nl(formula, parameters, data = NULL)
 \arguments{
 \item{formula}{A right-sided formula specifying a non linear expression.}
 
-\item{parameters}{A list with elements of the same name of the parameters specifying a vector of lower and upper bounds.}
+\item{parameters}{A vector containing the names of the parameters of the non linear expression.}
 
 \item{data}{A data.frame containing variables used to compute the non linear function.}
 }
 \value{
-A list with tree elements:
+A list with the following elements:
 \describe{
 \item{\code{f}}{A function with argument the parameters \code{par} to compute the non linear expression.}
 \item{\code{jac}}{A function with argument the parameters \code{par} to compute the jacobian of \code{f}.}
 \item{\code{hes}}{A function with argument the parameters \code{par} to compute the hessian of \code{f}.}
+\item{\code{parameters}}{A character vector containing the names of the parameters.}
+\item{\code{par}}{A numeric vector containing the values of the parameters.}
+\item{\code{hyperpar}}{A numeric vector containing the values of the hyperparameter for penalization.}
+\item{\code{P}}{A penalty matrix.}
+\item{\code{fitted}}{A function of the parameters \code{par} to compute the partial fitted values of the non linear component.}
 }
 }
 \description{
@@ -26,10 +31,10 @@ Specification of non linear component
 }
 \examples{
 formula <- ~ theta0 * (x1^theta1) * (x2^theta2)
-parameters <- list(theta0 = c(0, Inf), theta1 = c(0, Inf), theta2 = c(0, Inf))
+parameters <- c("theta0", "theta1", "theta2")
 data <- abs(data.frame(x1 = rnorm(5), x2 = rnorm(5)))
 r <- nl(formula, parameters, data)
-par <- list(1, 2, 3)
+par <- c(1, 2, 3)
 r$f(par)
 r$jac(par)
 r$hes(par)

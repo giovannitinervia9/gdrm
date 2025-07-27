@@ -1,14 +1,19 @@
 #' Specification of non linear component
 #'
 #' @param formula A right-sided formula specifying a non linear expression.
-#' @param parameters A list with elements of the same name of the parameters specifying a vector of lower and upper bounds.
+#' @param parameters A vector containing the names of the parameters of the non linear expression.
 #' @param data A data.frame containing variables used to compute the non linear function.
 #'
-#' @returns A list with tree elements:
+#' @returns A list with the following elements:
 #' \describe{
 #' \item{`f`}{A function with argument the parameters `par` to compute the non linear expression.}
 #' \item{`jac`}{A function with argument the parameters `par` to compute the jacobian of `f`.}
 #' \item{`hes`}{A function with argument the parameters `par` to compute the hessian of `f`.}
+#' \item{`parameters`}{A character vector containing the names of the parameters.}
+#' \item{`par`}{A numeric vector containing the values of the parameters.}
+#' \item{`hyperpar`}{A numeric vector containing the values of the hyperparameter for penalization.}
+#' \item{`P`}{A penalty matrix.}
+#' \item{`fitted`}{A function of the parameters `par` to compute the partial fitted values of the non linear component.}
 #' }
 #'
 #' @export
@@ -17,10 +22,10 @@
 #' @importFrom Deriv Deriv
 #' @examples
 #' formula <- ~ theta0 * (x1^theta1) * (x2^theta2)
-#' parameters <- list(theta0 = c(0, Inf), theta1 = c(0, Inf), theta2 = c(0, Inf))
+#' parameters <- c("theta0", "theta1", "theta2")
 #' data <- abs(data.frame(x1 = rnorm(5), x2 = rnorm(5)))
 #' r <- nl(formula, parameters, data)
-#' par <- list(1, 2, 3)
+#' par <- c(1, 2, 3)
 #' r$f(par)
 #' r$jac(par)
 #' r$hes(par)
@@ -34,7 +39,7 @@ nl <- function(formula, parameters, data = NULL) {
   ff <- gsub("~", "", ff)
 
   vars <- colnames(data)
-  pars <- names(parameters)
+  pars <- parameters
   npars <- length(pars)
 
   if (any(vars %in% pars) | any(pars %in% vars)) {
@@ -136,7 +141,7 @@ nl <- function(formula, parameters, data = NULL) {
   P <- matrix(0, npars, npars)
   
   # initialize parameters value
-  par <- sapply(parameters, function(x) x[1]) + 1e-10
+  par <- rep(0, npars)
   names(par) <- pars
   hyperpar <- 0
   fitted = function(par) {drop(f(par))}
@@ -144,7 +149,7 @@ nl <- function(formula, parameters, data = NULL) {
   r <- list(f = f,
     jac = jac,
     hes = hes, 
-    parameters = parameters,
+    parameters = pars,
     par = par,
     hyperpar = hyperpar,
     P = P,
