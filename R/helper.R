@@ -356,3 +356,19 @@ gdrm_start <- function(response, mod_comp, distrib, coef_bounds) {
   
   mod_comp
 }
+
+
+#' Invert map transformation for gdrm coefficients
+#'
+#' @param par A vector containing mapped coefficients to be inverted.
+#' @param coef_id A vector of ids which assigns each coefficients in par to the respective model parameter.
+#' @param map_functions A list of functions to map parameters from constrained to real line created by [`make_map_function()`].
+#'
+#' @returns A vector containing the coefficient of the model inverted to their original constrained space.
+#'
+#' @export
+gdrm_invert_coef <- function(par, coef_id, map_functions) {
+  invert <- lapply(map_functions, function(map) map$invert)
+  par_list <- tapply(par, coef_id, identity)  
+  unlist(Map(function(invert, par) invert(par), invert = invert, par = par_list))
+}
