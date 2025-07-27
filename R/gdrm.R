@@ -58,6 +58,98 @@ gdrm_coef <- function(mod_comp) {
 }
 
 
+#' Extract coefficient of gdrm model in a numerical vector
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#'
+#' @returns A numeric vector containing the coefficients of the gdrm model.
+#'
+#' @export
+gdrm_coef_vector <- function(mod_comp) {
+  coef_vector <- c()
+  
+  for (comp_name in names(mod_comp)) {
+    comp <- mod_comp[[comp_name]]
+    
+    for (build_name in names(comp)) {
+      build <- comp[[build_name]]
+      # Each build always has a 'par' element
+      coef_vector <- c(coef_vector, build$par)
+    }
+  }
+  
+  return(coef_vector)
+}
+
+
+#' Update parameters of a gdrm model
+#'
+#' @param par A numeric vector of updated coefficients of a gdrm model.
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#'
+#' @returns A new `mod_comp` object with updated parameters.
+#'
+#' @export
+gdrm_update_coef <- function(par, mod_comp) {
+  # Create a deep copy of mod_comp to avoid modifying the original
+  updated_mod <- mod_comp
+  
+  # Initialize parameter index counter
+  par_idx <- 1
+  
+  # Function to get the total number of parameters needed
+  count_parameters <- function(mod_comp) {
+    total_params <- 0
+    
+    for (comp_name in names(mod_comp)) {
+      comp <- mod_comp[[comp_name]]
+      
+      for (build_name in names(comp)) {
+        build <- comp[[build_name]]
+        # Each build always has a 'par' element
+        total_params <- total_params + length(build$par)
+      }
+    }
+    
+    return(total_params)
+  }
+  
+  # Check if the parameter vector length matches expected
+  expected_params <- count_parameters(mod_comp)
+  if (length(par) != expected_params) {
+    stop(paste("Parameter vector length (", length(par), 
+               ") does not match expected number of parameters (", 
+               expected_params, ")", sep = ""))
+  }
+  
+  # Update parameters - simplified since each component always has 'par'
+  for (comp_name in names(updated_mod)) {
+    comp <- updated_mod[[comp_name]]
+    
+    for (build_name in names(comp)) {
+      build <- comp[[build_name]]
+      
+      # Each build always has a 'par' element
+      n_params <- length(build$par)
+      if (n_params > 0) {
+        # Extract the corresponding slice from par
+        new_params <- par[par_idx:(par_idx + n_params - 1)]
+        
+        # Update the parameters (keep names if they exist)
+        if (!is.null(names(build$par))) {
+          names(new_params) <- names(build$par)
+        }
+        
+        updated_mod[[comp_name]][[build_name]]$par <- new_params
+        par_idx <- par_idx + n_params
+      }
+    }
+  }
+  
+  return(updated_mod)
+}
+
+
 #' Build penalty matrix for gdrm model
 #'
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
