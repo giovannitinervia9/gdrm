@@ -17,12 +17,14 @@ build_linear <- function(formula, data = NULL) {
   formula <- as.formula(formula)
   X <- model.matrix(formula, data)
   par <- numeric(ncol(X))
+  hyperpar <- 0
   names(par) <- colnames(X)
   P <- matrix(0, ncol(X), ncol(X))
   fitted <- function(par) {drop(X%*%par)}
   r <- list(X = X,
     P = P,
     par = par,
+    hyperpar = hyperpar,
     fitted = fitted)
   class(r) <- "linear"
   r

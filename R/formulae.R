@@ -5,7 +5,9 @@
 #' @returns The type of the formula term indicated.
 #' @export
 classify_term <- function(x) {
-  if (grepl("^\\s*s\\s*\\(", x)) {
+  if (grepl("^\\s*s\\s*\\(", x) |
+    grepl("^\\s*te\\s*\\(", x) |
+    grepl("^\\s*ti\\s*\\(", x)) {
     "smooth"
   } else if (grepl("^\\s*nl\\s*\\(", x)) {
     "nl"

@@ -37,6 +37,7 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
 
   par <- numeric(ncol(X))
   names(par) <- colnames(X)
+  hyperpar <- .001
 
   P <- diag(1, ncol(X), ncol(X))
   fitted <- function(par) {drop(X%*%par)}
@@ -44,6 +45,7 @@ ridge <- function(formula, scale_numerical = TRUE, data = NULL) {
   r <- list(X = X,
     P = P,
     par = par,
+    hyperpar = hyperpar,
     fitted = fitted,
     scale_info = list(center = center, scale = scale))
   class(r) <- "ridge"

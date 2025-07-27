@@ -58,6 +58,60 @@ gdrm_coef <- function(mod_comp) {
 }
 
 
+#' Build penalty matrix for gdrm model
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param hyperpar Logical. If `TRUE` (default), the elements of the penalty matrix are multiplied by the respective hyperparameter.
+#'
+#' @returns A list of penalty matrices for each model parameter.
+#' @export
+gdrm_penalty <- function(mod_comp, hyperpar = TRUE) {
+  npar <- length(mod_comp)
+  Plist <- vector("list", npar)
+  names(Plist) <- names(mod_comp)
+
+  i <- j <- 1
+  j <- 2
+
+  for (i in 1:npar) {
+    ncomp <- length(mod_comp[[i]])
+    for (j in 1:ncomp) {
+      comp <- mod_comp[[i]][[j]]
+
+      if (inherits(comp, c("linear", "ridge", "nl"))) {
+        if (hyperpar) {
+          Plist[[i]][[j]] <- comp$hyperpar * comp$P
+        } else {
+          Plist[[i]][[j]] <- comp$P
+        }
+      } else if (inherits(comp, c("smooth"))) {
+        if (hyperpar) {
+          P <- Map(
+            function(Psub, hsub) {
+              # multiply each corresponding element of the sublists
+              Map(function(Pmat, hval) Pmat * hval, Psub, hsub)
+            },
+            comp$P,
+            comp$hyperpar
+          )
+
+          P <- lapply(P, function(Pj) Reduce(`+`, Pj))
+
+          Plist[[i]][[j]] <- as.matrix(Matrix::bdiag(P))
+        } else {
+          P <- lapply(comp$P, function(Pj) Reduce(`+`, Pj))
+          Plist[[i]][[j]] <- as.matrix(Matrix::bdiag(P))
+        }
+      }
+
+      names(Plist[[i]])[[j]] <- names(mod_comp[[i]])[j]
+    }
+  }
+
+  lapply(Plist, function(P) as.matrix(Matrix::bdiag(P)))
+}
+
+
 #' Gradient of the loglikelihood function wrt theta of gdrm model
 #'
 #' @param response Response variable.
@@ -66,8 +120,8 @@ gdrm_coef <- function(mod_comp) {
 #' @return A list containing the gradient of the loglikelihood wrt eta for each model parameter.
 #' @export
 gdrm_l_theta <- function(response, mod_comp, distrib) {
-      distrib$grad(response, gdrm_fitted(mod_comp, distrib), sum = FALSE)
-    }
+  distrib$grad(response, gdrm_fitted(mod_comp, distrib), sum = FALSE)
+}
 
 
 #' Hessian of the loglikelihood function wrt theta of gdrm model
@@ -177,24 +231,28 @@ gdrm_eta2_beta2 <- function(mod_comp) {
 #'
 #' @export
 gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE) {
-  
-    l_theta <- gdrm_l_theta(response, mod_comp, distrib)
-    
-    theta_eta <- gdrm_theta_eta(mod_comp, distrib)
+  l_theta <- gdrm_l_theta(response, mod_comp, distrib)
 
-    eta_beta <- gdrm_eta_beta(mod_comp)
+  theta_eta <- gdrm_theta_eta(mod_comp, distrib)
 
-    eta_beta <- lapply(eta_beta, function(x) do.call(cbind, x))
+  eta_beta <- gdrm_eta_beta(mod_comp)
 
-    grad_list <- Map(function(l_theta, theta_eta, eta_beta) {
-      l_theta*theta_eta*eta_beta
-    }, l_theta = l_theta, theta_eta = theta_eta, eta_beta = eta_beta)
-    
-    if (sum) {
-      grad_list <- lapply(grad_list, colSums)
-    }
+  eta_beta <- lapply(eta_beta, function(x) do.call(cbind, x))
 
-    grad_list
+  grad_list <- Map(
+    function(l_theta, theta_eta, eta_beta) {
+      l_theta * theta_eta * eta_beta
+    },
+    l_theta = l_theta,
+    theta_eta = theta_eta,
+    eta_beta = eta_beta
+  )
+
+  if (sum) {
+    grad_list <- lapply(grad_list, colSums)
+  }
+
+  grad_list
 }
 
 
@@ -211,123 +269,143 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE) {
 gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE) {
   l_theta <- gdrm_l_theta(response, mod_comp, distrib)
   l2_theta2 <- gdrm_l2_theta2(response, mod_comp, distrib)
-  
+
   theta_eta <- gdrm_theta_eta(mod_comp, distrib)
   theta2_eta2 <- gdrm_theta2_eta2(mod_comp, distrib)
-  
+
   eta_beta <- gdrm_eta_beta(mod_comp)
   eta2_beta2 <- gdrm_eta2_beta2(mod_comp)
-  
+
   n <- length(response)
   p <- length(l_theta)
   k <- lapply(eta_beta, length)
-  
-  l <- lapply(eta_beta, function(comp) {sapply(comp, ncol)})
+
+  l <- lapply(eta_beta, function(comp) {
+    sapply(comp, ncol)
+  })
   nl <- sapply(l, length)
-  
+
   npar <- sum(unlist(l))
-  pars <- unlist(lapply(eta_beta, function(comp) {sapply(comp, colnames)}))
-  
+  pars <- unlist(lapply(eta_beta, function(comp) {
+    sapply(comp, colnames)
+  }))
+
   hi <- matrix(0, nrow = npar, ncol = npar, dimnames = list(pars, pars))
   h_list <- rep(list(hi), n)
-  
+
   # Helper function to safely extract eta2_beta2
   get_eta2_beta2 <- function(eta2_list, j, l, i) {
     eta2_array <- eta2_list[[j]][[l]]
-    if(length(dim(eta2_array)) == 3) {
-      return(eta2_array[, , i])
+    if (length(dim(eta2_array)) == 3) {
+      return(eta2_array[,, i])
     } else {
       return(eta2_array)
     }
   }
-  
+
   # Helper function for parameter indexing
   get_param_indices <- function(j, l, l_structure) {
-    if(j == 1 && l == 1) {
+    if (j == 1 && l == 1) {
       start_idx <- 1
-    } else if(j == 1) {
-      start_idx <- sum(l_structure[[j]][1:(l-1)]) + 1
-    } else if(l == 1) {
-      start_idx <- sum(unlist(l_structure[1:(j-1)])) + 1
+    } else if (j == 1) {
+      start_idx <- sum(l_structure[[j]][1:(l - 1)]) + 1
+    } else if (l == 1) {
+      start_idx <- sum(unlist(l_structure[1:(j - 1)])) + 1
     } else {
-      start_idx <- sum(unlist(l_structure[1:(j-1)])) + sum(l_structure[[j]][1:(l-1)]) + 1
+      start_idx <- sum(unlist(l_structure[1:(j - 1)])) +
+        sum(l_structure[[j]][1:(l - 1)]) +
+        1
     }
-    
-    end_idx <- sum(unlist(l_structure[1:(j-1)])) + sum(l_structure[[j]][1:l])
-    if(j == 1) {
+
+    end_idx <- sum(unlist(l_structure[1:(j - 1)])) + sum(l_structure[[j]][1:l])
+    if (j == 1) {
       end_idx <- sum(l_structure[[j]][1:l])
     }
-    
+
     return(c(start_idx, end_idx))
   }
-  
-  for(i in 1:n) {
-    for(j1 in 1:p) {
-      for(j2 in j1:p) {
-        
+
+  for (i in 1:n) {
+    for (j1 in 1:p) {
+      for (j2 in j1:p) {
         if (j1 == j2) {
           # Same distribution parameter
           for (l1 in 1:nl[j1]) {
             for (l2 in l1:nl[j1]) {
-              
-              if(l1 == l2) {
+              if (l1 == l2) {
                 # Case 1: same component, same predictor
                 eta2_term <- get_eta2_beta2(eta2_beta2, j1, l1, i)
-                
-                h_block <- eta_beta[[j1]][[l1]][i, ] %*% t(eta_beta[[j1]][[l1]][i, ]) * 
-                          (l2_theta2[j1, j1, i] * (theta_eta[[j1]][i])^2 + 
-                           l_theta[[j1]][i] * theta2_eta2[[j1]][i]) +
-                          l_theta[[j1]][i] * theta_eta[[j1]][i] * eta2_term
-                
+
+                h_block <- eta_beta[[j1]][[l1]][i, ] %*%
+                  t(eta_beta[[j1]][[l1]][i, ]) *
+                  (l2_theta2[j1, j1, i] *
+                    (theta_eta[[j1]][i])^2 +
+                    l_theta[[j1]][i] * theta2_eta2[[j1]][i]) +
+                  l_theta[[j1]][i] * theta_eta[[j1]][i] * eta2_term
               } else {
-                # Case 2: different components, same predictor  
-                h_block <- eta_beta[[j1]][[l1]][i, ] %*% t(eta_beta[[j1]][[l2]][i, ]) * 
-                          (l2_theta2[j1, j1, i] * (theta_eta[[j1]][i])^2 + 
-                           l_theta[[j1]][i] * theta2_eta2[[j1]][i])
+                # Case 2: different components, same predictor
+                h_block <- eta_beta[[j1]][[l1]][i, ] %*%
+                  t(eta_beta[[j1]][[l2]][i, ]) *
+                  (l2_theta2[j1, j1, i] *
+                    (theta_eta[[j1]][i])^2 +
+                    l_theta[[j1]][i] * theta2_eta2[[j1]][i])
               }
-              
+
               # Get parameter indices
               indices_l1 <- get_param_indices(j1, l1, l)
               indices_l2 <- get_param_indices(j1, l2, l)
-              
+
               # Fill the Hessian block
-              h_list[[i]][indices_l1[1]:indices_l1[2], indices_l2[1]:indices_l2[2]] <- h_block
-              if(l1 != l2) {
-                h_list[[i]][indices_l2[1]:indices_l2[2], indices_l1[1]:indices_l1[2]] <- t(h_block)
+              h_list[[i]][
+                indices_l1[1]:indices_l1[2],
+                indices_l2[1]:indices_l2[2]
+              ] <- h_block
+              if (l1 != l2) {
+                h_list[[i]][
+                  indices_l2[1]:indices_l2[2],
+                  indices_l1[1]:indices_l1[2]
+                ] <- t(h_block)
               }
             }
           }
-          
         } else {
-          # Different distribution parameters (j1 != j2)  
+          # Different distribution parameters (j1 != j2)
           for (l1 in 1:nl[j1]) {
             for (l2 in 1:nl[j2]) {
-              
               # Cases 3 & 4: cross-parameter terms
-              h_block <- eta_beta[[j1]][[l1]][i, ] %*% t(eta_beta[[j2]][[l2]][i, ]) * 
-                        theta_eta[[j1]][i] * theta_eta[[j2]][i] * l2_theta2[j1, j2, i]
-              
+              h_block <- eta_beta[[j1]][[l1]][i, ] %*%
+                t(eta_beta[[j2]][[l2]][i, ]) *
+                theta_eta[[j1]][i] *
+                theta_eta[[j2]][i] *
+                l2_theta2[j1, j2, i]
+
               # Get parameter indices for cross-parameter blocks
               indices_l1 <- get_param_indices(j1, l1, l)
               indices_l2 <- get_param_indices(j2, l2, l)
-              
+
               # Fill the Hessian block
-              h_list[[i]][indices_l1[1]:indices_l1[2], indices_l2[1]:indices_l2[2]] <- h_block
-              h_list[[i]][indices_l2[1]:indices_l2[2], indices_l1[1]:indices_l1[2]] <- t(h_block)
+              h_list[[i]][
+                indices_l1[1]:indices_l1[2],
+                indices_l2[1]:indices_l2[2]
+              ] <- h_block
+              h_list[[i]][
+                indices_l2[1]:indices_l2[2],
+                indices_l1[1]:indices_l1[2]
+              ] <- t(h_block)
             }
           }
         }
       }
     }
   }
-  
+
   # Sum over observations if requested
-  if(sum) {
+  if (sum) {
     h <- Reduce("+", h_list)
   } else {
     h <- simplify2array(h_list)
   }
-  
+
   return(h)
 }
 
@@ -349,7 +427,6 @@ gdrm <- function(
   data,
   gdrm_control_list = gdrm_control()
 ) {
-
   force_intercept <- gdrm_control_list$force_intercept
 
   # get response
@@ -367,8 +444,6 @@ gdrm <- function(
   npars <- lapply(mod_comp, function(f) {
     sum(sapply(f, function(ff) length(ff$par)))
   })
-
-
 
   # function to build hessian
 }

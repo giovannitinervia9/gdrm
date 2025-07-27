@@ -138,6 +138,7 @@ nl <- function(formula, parameters, data = NULL) {
   # initialize parameters value
   par <- sapply(parameters, function(x) x[1]) + 1e-10
   names(par) <- pars
+  hyperpar <- 0
   fitted = function(par) {drop(f(par))}
   
   r <- list(f = f,
@@ -145,6 +146,7 @@ nl <- function(formula, parameters, data = NULL) {
     hes = hes, 
     parameters = parameters,
     par = par,
+    hyperpar = hyperpar,
     P = P,
     fitted = fitted)
   class(r) <- "nl"
