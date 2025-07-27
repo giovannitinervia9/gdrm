@@ -479,7 +479,7 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
       n <- length(l_theta$mu)
       par <- lapply(gdrm_coef(mod_comp), unlist)
       P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
-      grad_list <- Map(function(g, P) apply(g, 1, function(gi) gi + P), g = grad_list, P = P)
+      grad_list <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "+"), grad_list, P)
     }
   }
 
@@ -654,6 +654,105 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
   }
 
   return(h)
+}
+
+
+#' Mapped Gradient of loglikelihood of gdrm model
+#'
+#' @param response Response variable.
+#' @param distrib A `[distrib]` object.
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param map_functions A list of functions to map parameters from constrained to real line created by [`make_map_function()`].
+#' @param sum Logical. If `TRUE` (default) the gradient is return, else if `FALSE` the individual contributions to gradient are returned.
+#' @param penalty Logical. If `TRUE` (default) the penalized gradient is returned.
+#'
+#' @returns Mapped Gradient of loglikelihood function.
+#'
+#' @export
+gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE, penalty = TRUE) {
+
+  par <- lapply(gdrm_coef(mod_comp), unlist)
+
+  invert_jacobian <- lapply(map_functions, function(map) map$invert_jacobian)
+
+  j <- Map(function(j, par) j(par), j = invert_jacobian, par = par)
+  g <- gdrm_grad(response, distrib, mod_comp, sum, penalty = FALSE)
+
+  if (sum) {
+    
+    g <- Map(function(g, j) g*j, g = g, j = j)
+
+    if (penalty) {
+      P <- Map(function(P, par) drop(2*P%*%par), P = gdrm_penalty(mod_comp), par = par)
+      g <- Map(function(g, P) g + P, g = g, P = P)
+    }
+
+  } else {
+    g <- Map(function(g, j) t(t(g) * j), g, j)
+
+    if (penalty) {
+      n <- NROW(g[[1]])
+      P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
+      g <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "+"), g, P)
+    }
+  }
+
+  g
+}
+
+
+#' Mapped Hessian of loglikelihood of gdrm model
+#'
+#' @param response Response variable.
+#' @param distrib A `[distrib]` object.
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param map_functions A list of functions to map parameters from constrained to real line created by [`make_map_function()`].
+#' @param sum Logical. If `TRUE` (default) the hessian is returned, else if `FALSE` the individual contributions to the hessian are returned.
+#' @param penalty Logical. If `TRUE` (default) the penalized hessian is returned.
+#' @param expected Logical. If `TRUE` (default) use expected Fisher Information if available.
+#'
+#' @returns Mapped Hessian of loglikelihood function.
+#'
+#' @export
+gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE, penalty = TRUE, expected = TRUE) {
+
+  par <- lapply(gdrm_coef(mod_comp), unlist)
+
+  invert_jacobian <- lapply(map_functions, function(map) map$invert_jacobian)
+  invert_hessian <- lapply(map_functions, function(map) map$invert_hessian)
+
+  j <- unlist(Map(function(j, par) j(par), j = invert_jacobian, par = par))
+  dj <- diag(j)
+  h <- unlist(Map(function(h, par) h(par), h = invert_hessian, par = par))
+  
+  hess <- gdrm_hessian(response, distrib, mod_comp, sum, penalty = FALSE)
+
+  if (sum) {
+    g <- unlist(gdrm_grad(response, distrib, mod_comp, sum))
+    hess <- dj%*%hess%*%dj + diag(g*h)
+
+    if (penalty) {
+      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+      hess <- hess + 2*P
+    }
+  } else {
+
+    g <- gdrm_grad(response, distrib, mod_comp, sum)
+    g <- do.call(cbind, g)
+    k <- ncol(g)
+    n <- nrow(g)
+    result <- array(dim = c(k, k, n))
+    for(i in 1:n) {
+      result[,,i] <- dj %*% hess[,,i] %*% dj + diag(g[i,] * h)
+    }
+    hess <- result
+
+    if (penalty) {
+      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))/n
+      hess + array(2*P, dim = c(k, k, n))
+    }
+  }
+  hess
 }
 
 
