@@ -2,7 +2,7 @@
 % Please edit documentation in R/gdrm.R
 \name{gdrm_l_theta}
 \alias{gdrm_l_theta}
-\title{Derivatives of the loglikelihood function wrt theta of gdrm model}
+\title{Gradient of the loglikelihood function wrt theta of gdrm model}
 \usage{
 gdrm_l_theta(response, mod_comp, distrib)
 }
@@ -14,8 +14,8 @@ gdrm_l_theta(response, mod_comp, distrib)
 \item{distrib}{A \verb{[distrib]} object.}
 }
 \value{
-A list containing the the derivatives of the loglikelihood wrt eta for each model parameter.
+A list containing the gradient of the loglikelihood wrt eta for each model parameter.
 }
 \description{
-Derivatives of the loglikelihood function wrt theta of gdrm model
+Gradient of the loglikelihood function wrt theta of gdrm model
 }

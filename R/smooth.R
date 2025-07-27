@@ -39,7 +39,7 @@ build_smooth <- function(smooth_term, data = NULL) {
   P <- as.matrix(Matrix::bdiag(Plist))
   id <- rep(1:nbasis, sapply(Xlist, ncol))
   colnames(P) <- rownames(P) <- colnames(X)
-  fitted <- drop(X%*%par)
+  fitted <- function(par) {drop(X%*%par)}
   r <- list(X = X,
     P = P,
     par = par,

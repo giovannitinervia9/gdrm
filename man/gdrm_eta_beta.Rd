@@ -2,7 +2,7 @@
 % Please edit documentation in R/gdrm.R
 \name{gdrm_eta_beta}
 \alias{gdrm_eta_beta}
-\title{Derivatives of eta wrt beta of gdrm model}
+\title{First derivative of eta wrt beta of gdrm model}
 \usage{
 gdrm_eta_beta(mod_comp)
 }
@@ -10,8 +10,8 @@ gdrm_eta_beta(mod_comp)
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 }
 \value{
-A list containing the the derivatives of eta wrt beta for each component of the model.
+A list containing the first derivatives of eta wrt beta for each component of the model.
 }
 \description{
-Derivatives of eta wrt beta of gdrm model
+First derivative of eta wrt beta of gdrm model
 }

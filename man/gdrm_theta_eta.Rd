@@ -2,7 +2,7 @@
 % Please edit documentation in R/gdrm.R
 \name{gdrm_theta_eta}
 \alias{gdrm_theta_eta}
-\title{Derivatives of theta wrt eta of gdrm model}
+\title{First derivative of theta wrt eta of gdrm model}
 \usage{
 gdrm_theta_eta(mod_comp, distrib)
 }
@@ -12,8 +12,8 @@ gdrm_theta_eta(mod_comp, distrib)
 \item{distrib}{A \verb{[distrib]} object.}
 }
 \value{
-A list containing the the derivatives of theta wrt eta for each model parameter.
+A list containing the first derivative of theta wrt eta for each model parameter.
 }
 \description{
-Derivatives of theta wrt eta of gdrm model
+First derivative of theta wrt eta of gdrm model
 }

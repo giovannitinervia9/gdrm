@@ -138,7 +138,7 @@ nl <- function(formula, parameters, data = NULL) {
   # initialize parameters value
   par <- sapply(parameters, function(x) x[1]) + 1e-10
   names(par) <- pars
-  fitted = drop(f(par))
+  fitted = function(par) {drop(f(par))}
   
   r <- list(f = f,
     jac = jac,

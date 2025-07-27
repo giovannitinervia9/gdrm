@@ -19,7 +19,7 @@ build_linear <- function(formula, data = NULL) {
   par <- numeric(ncol(X))
   names(par) <- colnames(X)
   P <- matrix(0, ncol(X), ncol(X))
-  fitted <- drop(X%*%par)
+  fitted <- function(par) {drop(X%*%par)}
   r <- list(X = X,
     P = P,
     par = par,

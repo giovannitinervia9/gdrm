@@ -15,6 +15,9 @@ gdrm_grad(response, distrib, mod_comp, sum = TRUE)
 
 \item{sum}{Logical. If \code{TRUE} (default) the gradient is return, else if \code{FALSE} the individual contributions to gradient are returned.}
 }
+\value{
+Gradient of loglikelihood function.
+}
 \description{
 Gradient of loglikelihood of gdrm model
 }
