@@ -5,8 +5,11 @@
 #' @export
 gdrm_predict <- function(mod_comp) {
   lapply(mod_comp, function(mod_par) {
-    comps <- lapply(mod_par, function(comp) comp$fitted(comp$par))
-    Reduce(`+`, comps)
+    res <- 0
+    for (comp in mod_par) {
+      res <- res + comp$fitted(comp$par)
+    }
+    res
   })
 }
 
@@ -20,7 +23,12 @@ gdrm_predict <- function(mod_comp) {
 gdrm_fitted <- function(mod_comp, distrib) {
   eta <- gdrm_predict(mod_comp)
   link <- distrib$link_list
-  Map(function(eta, link) link$linkinv(eta), eta = eta, link = link)
+  k <- length(eta)
+  out <- vector("list", k)
+  for (i in seq_len(k)) {
+    out[[i]] <- link[[i]]$linkinv(eta[[i]])
+  }
+  out
 }
 
 

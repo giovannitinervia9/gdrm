@@ -257,82 +257,205 @@ map_negative <- function() {
 #' j_invert <- invert_jacobian(y)
 #' h_invert <- invert_hessian(y)
 make_map_function <- function(lower, upper) {
+  # Input validation
   if (length(lower) != length(upper)) {
-    stop("lower and upper must be of the same length")
+    stop("lower and upper must have the same length")
   }
-
-  if (any(lower >= upper)) stop("lower must be less than upper")
-
+  
   npar <- length(lower)
-  map_string <- character(npar)
-  invert_string <- map_string
-  map_j_string <- map_string
-  map_h_string <- map_string
-  invert_j_string <- map_string
-  invert_h_string <- map_string
-
-  for (i in 1:npar) {
-    if (is.infinite(lower[i]) & is.infinite(upper[i])) {
-      map_string[i] <- invert_string[i] <- paste0("par[", deparse(i), "]")
-      map_j_string[i] <- invert_j_string[i] <- "1"
-      map_h_string[i] <- invert_h_string[i] <- "0"
-    } else if (!is.infinite(lower[i]) & is.infinite(upper[i])) {
-      map_string[i] <- paste0("map_positive()$map(par[", deparse(i), "], ", deparse(lower[i]), ")")
-      invert_string[i] <- paste0("map_positive()$invert(par[", deparse(i), "], ", deparse(lower[i]), ")")
-      map_j_string[i] <- paste0("map_positive()$map_jacobian(par[", deparse(i), "], ", deparse(lower[i]), ")")
-      map_h_string[i] <- paste0("map_positive()$map_hessian(par[", deparse(i), "], ", deparse(lower[i]), ")")
-      invert_j_string[i] <- paste0("map_positive()$invert_jacobian(par[", deparse(i), "], ", deparse(lower[i]), ")")
-      invert_h_string[i] <- paste0("map_positive()$invert_hessian(par[", deparse(i), "], ", deparse(lower[i]), ")")
-    } else if (is.infinite(lower[i]) & !is.infinite(upper[i])) {
-      map_string[i] <- paste0("map_negative()$map(par[", deparse(i), "], ", deparse(upper[i]), ")")
-      invert_string[i] <- paste0("map_negative()$invert(par[", deparse(i), "], ", deparse(upper[i]), ")")
-      map_j_string[i] <- paste0("map_negative()$map_jacobian(par[", deparse(i), "], ", deparse(upper[i]), ")")
-      map_h_string[i] <- paste0("map_negative()$map_hessian(par[", deparse(i), "], ", deparse(upper[i]), ")")
-      invert_j_string[i] <- paste0("map_negative()$invert_jacobian(par[", deparse(i), "], ", deparse(upper[i]), ")")
-      invert_h_string[i] <- paste0("map_negative()$invert_hessian(par[", deparse(i), "], ", deparse(upper[i]), ")")
-    } else if (!is.infinite(lower[i]) & !is.infinite(upper[i])) {
-      map_string[i] <- paste0("map_interval()$map(par[", deparse(i), "], ", deparse(lower[i]), ", ", deparse(upper[i]), ")")
-      invert_string[i] <- paste0("map_interval()$invert(par[", deparse(i), "], ", deparse(lower[i]), ", ", deparse(upper[i]), ")")
-      map_j_string[i] <- paste0("map_interval()$map_jacobian(par[", deparse(i), "], ", deparse(lower[i]), ", ", deparse(upper[i]), ")")
-      map_h_string[i] <- paste0("map_interval()$map_hessian(par[", deparse(i), "], ", deparse(lower[i]), ", ", deparse(upper[i]), ")")
-      invert_j_string[i] <- paste0("map_interval()$invert_jacobian(par[", deparse(i), "], ", deparse(lower[i]), ", ", deparse(upper[i]), ")")
-      invert_h_string[i] <- paste0("map_interval()$invert_hessian(par[", deparse(i), "], ", deparse(lower[i]), ", ", deparse(upper[i]), ")")
-    }
-  }
-
-  map <- function(par) {
-    code <- paste0("c(", paste(map_string, collapse = ", "), ")")
-    eval(parse(text = code))
-  }
-
-  invert <- function(par) {
-    code <- paste0("c(", paste(invert_string, collapse = ", "), ")")
-    eval(parse(text = code))
-  }
-
-  map_jacobian <- function(par) {
-    code <- paste0("c(", paste(map_j_string, collapse = ", "), ")")
-    eval(parse(text = code))
-  }
-
-  map_hessian <- function(par) {
-    code <- paste0("c(", paste(map_h_string, collapse = ", "), ")")
-    eval(parse(text = code))
-  }
-
-  invert_jacobian <- function(par) {
-    code <- paste0("c(", paste(invert_j_string, collapse = ", "), ")")
-    eval(parse(text = code))
-  }
-
-  invert_hessian <- function(par) {
-    code <- paste0("c(", paste(invert_h_string, collapse = ", "), ")")
-    eval(parse(text = code))
-  }
-
+  
+  # Pre-allocate result vectors for better performance
+  result_template <- numeric(npar)
+  
+  # Classify transformation types once
+  lower_inf <- is.infinite(lower)
+  upper_inf <- is.infinite(upper)
+  
+  # Create transformation type indicators (avoids repeated is.infinite calls)
+  # 1 = unbounded, 2 = lower bounded, 3 = upper bounded, 4 = interval bounded
+  transform_type <- ifelse(lower_inf & upper_inf, 1L,
+                    ifelse(!lower_inf & upper_inf, 2L,
+                    ifelse(lower_inf & !upper_inf, 3L, 4L)))
+  
+  # Pre-compute transformation objects to avoid repeated function calls
+  tf_positive <- NULL
+  tf_negative <- NULL
+  tf_interval <- NULL
+  
+  # Only create transformation objects if needed
+  if (any(transform_type == 2L)) tf_positive <- map_positive()
+  if (any(transform_type == 3L)) tf_negative <- map_negative()
+  if (any(transform_type == 4L)) tf_interval <- map_interval()
+  
+  # Create optimized transformation functions using vectorized operations where possible
   list(
-    map = map, invert = invert, map_jacobian = map_jacobian,
-    map_hessian = map_hessian, invert_jacobian = invert_jacobian,
-    invert_hessian = invert_hessian
+    map = function(par) {
+      result <- result_template
+      
+      # Handle each transformation type in batch
+      unbounded_idx <- transform_type == 1L
+      if (any(unbounded_idx)) {
+        result[unbounded_idx] <- par[unbounded_idx]
+      }
+      
+      lower_bounded_idx <- transform_type == 2L
+      if (any(lower_bounded_idx)) {
+        result[lower_bounded_idx] <- tf_positive$map(par[lower_bounded_idx], lower[lower_bounded_idx])
+      }
+      
+      upper_bounded_idx <- transform_type == 3L
+      if (any(upper_bounded_idx)) {
+        result[upper_bounded_idx] <- tf_negative$map(par[upper_bounded_idx], upper[upper_bounded_idx])
+      }
+      
+      interval_bounded_idx <- transform_type == 4L
+      if (any(interval_bounded_idx)) {
+        result[interval_bounded_idx] <- tf_interval$map(par[interval_bounded_idx], 
+                                                       lower[interval_bounded_idx], 
+                                                       upper[interval_bounded_idx])
+      }
+      
+      result
+    },
+    
+    invert = function(par) {
+      result <- result_template
+      
+      unbounded_idx <- transform_type == 1L
+      if (any(unbounded_idx)) {
+        result[unbounded_idx] <- par[unbounded_idx]
+      }
+      
+      lower_bounded_idx <- transform_type == 2L
+      if (any(lower_bounded_idx)) {
+        result[lower_bounded_idx] <- tf_positive$invert(par[lower_bounded_idx], lower[lower_bounded_idx])
+      }
+      
+      upper_bounded_idx <- transform_type == 3L
+      if (any(upper_bounded_idx)) {
+        result[upper_bounded_idx] <- tf_negative$invert(par[upper_bounded_idx], upper[upper_bounded_idx])
+      }
+      
+      interval_bounded_idx <- transform_type == 4L
+      if (any(interval_bounded_idx)) {
+        result[interval_bounded_idx] <- tf_interval$invert(par[interval_bounded_idx], 
+                                                          lower[interval_bounded_idx], 
+                                                          upper[interval_bounded_idx])
+      }
+      
+      result
+    },
+    
+    map_jacobian = function(par) {
+      result <- result_template
+      
+      unbounded_idx <- transform_type == 1L
+      if (any(unbounded_idx)) {
+        result[unbounded_idx] <- 1.0
+      }
+      
+      lower_bounded_idx <- transform_type == 2L
+      if (any(lower_bounded_idx)) {
+        result[lower_bounded_idx] <- tf_positive$map_jacobian(par[lower_bounded_idx], lower[lower_bounded_idx])
+      }
+      
+      upper_bounded_idx <- transform_type == 3L
+      if (any(upper_bounded_idx)) {
+        result[upper_bounded_idx] <- tf_negative$map_jacobian(par[upper_bounded_idx], upper[upper_bounded_idx])
+      }
+      
+      interval_bounded_idx <- transform_type == 4L
+      if (any(interval_bounded_idx)) {
+        result[interval_bounded_idx] <- tf_interval$map_jacobian(par[interval_bounded_idx], 
+                                                               lower[interval_bounded_idx], 
+                                                               upper[interval_bounded_idx])
+      }
+      
+      result
+    },
+    
+    map_hessian = function(par) {
+      result <- result_template
+      
+      unbounded_idx <- transform_type == 1L
+      if (any(unbounded_idx)) {
+        result[unbounded_idx] <- 0.0
+      }
+      
+      lower_bounded_idx <- transform_type == 2L
+      if (any(lower_bounded_idx)) {
+        result[lower_bounded_idx] <- tf_positive$map_hessian(par[lower_bounded_idx], lower[lower_bounded_idx])
+      }
+      
+      upper_bounded_idx <- transform_type == 3L
+      if (any(upper_bounded_idx)) {
+        result[upper_bounded_idx] <- tf_negative$map_hessian(par[upper_bounded_idx], upper[upper_bounded_idx])
+      }
+      
+      interval_bounded_idx <- transform_type == 4L
+      if (any(interval_bounded_idx)) {
+        result[interval_bounded_idx] <- tf_interval$map_hessian(par[interval_bounded_idx], 
+                                                              lower[interval_bounded_idx], 
+                                                              upper[interval_bounded_idx])
+      }
+      
+      result
+    },
+    
+    invert_jacobian = function(par) {
+      result <- result_template
+      
+      unbounded_idx <- transform_type == 1L
+      if (any(unbounded_idx)) {
+        result[unbounded_idx] <- 1.0
+      }
+      
+      lower_bounded_idx <- transform_type == 2L
+      if (any(lower_bounded_idx)) {
+        result[lower_bounded_idx] <- tf_positive$invert_jacobian(par[lower_bounded_idx], lower[lower_bounded_idx])
+      }
+      
+      upper_bounded_idx <- transform_type == 3L
+      if (any(upper_bounded_idx)) {
+        result[upper_bounded_idx] <- tf_negative$invert_jacobian(par[upper_bounded_idx], upper[upper_bounded_idx])
+      }
+      
+      interval_bounded_idx <- transform_type == 4L
+      if (any(interval_bounded_idx)) {
+        result[interval_bounded_idx] <- tf_interval$invert_jacobian(par[interval_bounded_idx], 
+                                                                  lower[interval_bounded_idx], 
+                                                                  upper[interval_bounded_idx])
+      }
+      
+      result
+    },
+    
+    invert_hessian = function(par) {
+      result <- result_template
+      
+      unbounded_idx <- transform_type == 1L
+      if (any(unbounded_idx)) {
+        result[unbounded_idx] <- 0.0
+      }
+      
+      lower_bounded_idx <- transform_type == 2L
+      if (any(lower_bounded_idx)) {
+        result[lower_bounded_idx] <- tf_positive$invert_hessian(par[lower_bounded_idx], lower[lower_bounded_idx])
+      }
+      
+      upper_bounded_idx <- transform_type == 3L
+      if (any(upper_bounded_idx)) {
+        result[upper_bounded_idx] <- tf_negative$invert_hessian(par[upper_bounded_idx], upper[upper_bounded_idx])
+      }
+      
+      interval_bounded_idx <- transform_type == 4L
+      if (any(interval_bounded_idx)) {
+        result[interval_bounded_idx] <- tf_interval$invert_hessian(par[interval_bounded_idx], 
+                                                                 lower[interval_bounded_idx], 
+                                                                 upper[interval_bounded_idx])
+      }
+      
+      result
+    }
   )
 }

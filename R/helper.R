@@ -83,62 +83,36 @@ make_coef_bounds <- function(coef_bounds, coef_names) {
 #'
 #' @export
 gdrm_update_coef <- function(par, mod_comp) {
-  # Create a deep copy of mod_comp to avoid modifying the original
-  updated_mod <- mod_comp
-  
-  # Initialize parameter index counter
-  par_idx <- 1
-  
-  # Function to get the total number of parameters needed
-  count_parameters <- function(mod_comp) {
-    total_params <- 0
-    
-    for (i in 1:length(mod_comp)) {
-      comp <- mod_comp[[i]]
-      
-      for (j in 1:length(comp)) {
-        build <- comp[[j]]
-        # Each build always has a 'par' element
-        total_params <- total_params + length(build$par)
-      }
-    }
-    
-    return(total_params)
-  }
-  
-  # Check if the parameter vector length matches expected
-  expected_params <- count_parameters(mod_comp)
-  if (length(par) != expected_params) {
-    stop(paste("Parameter vector length (", length(par), 
-               ") does not match expected number of parameters (", 
-               expected_params, ")", sep = ""))
-  }
-  
-  # Update parameters - simplified since each component always has 'par'
-  for (i in 1:length(updated_mod)) {
-    comp <- updated_mod[[i]]
-    
-    for (j in 1:length(comp)) {
+  par_idx <- 1L
+  total_params <- 0L
+
+  # One-pass traversal: update directly and count total
+  for (i in seq_along(mod_comp)) {
+    comp <- mod_comp[[i]]
+    for (j in seq_along(comp)) {
       build <- comp[[j]]
-      
-      # Each build always has a 'par' element
       n_params <- length(build$par)
-      if (n_params > 0) {
-        # Extract the corresponding slice from par
-        new_params <- par[par_idx:(par_idx + n_params - 1)]
-        
-        # Update the parameters (keep names if they exist)
+      if (n_params > 0L) {
+        total_params <- total_params + n_params
+        new_params <- par[par_idx:(par_idx + n_params - 1L)]
         if (!is.null(names(build$par))) {
           names(new_params) <- names(build$par)
         }
-        
-        updated_mod[[i]][[j]]$par <- new_params
+        mod_comp[[i]][[j]]$par <- new_params
         par_idx <- par_idx + n_params
       }
     }
   }
-  
-  return(updated_mod)
+
+  # Check if all parameters were consumed
+  if (length(par) != total_params) {
+    stop(sprintf(
+      "Parameter vector length (%d) does not match expected number of parameters (%d)",
+      length(par), total_params
+    ))
+  }
+
+  mod_comp
 }
 
 
@@ -369,6 +343,11 @@ gdrm_start <- function(response, mod_comp, distrib, coef_bounds) {
 #' @export
 gdrm_invert_coef <- function(par, coef_id, map_functions) {
   invert <- lapply(map_functions, function(map) map$invert)
-  par_list <- tapply(par, coef_id, identity)  
-  unlist(Map(function(invert, par) invert(par), invert = invert, par = par_list))
+  par_list <- split(par, coef_id)  
+  k <- length(par_list)
+  out_list <- vector("list", k)
+  for (i in seq_len(k)) {
+    out_list[[i]] <- invert[[i]](par_list[[i]])
+  }
+  unlist(out_list, use.names = FALSE)
 }
