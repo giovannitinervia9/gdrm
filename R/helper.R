@@ -305,3 +305,54 @@ gdrm_update_hyperpar <- function(par, mod_comp) {
   
   return(updated_mod)
 }
+
+
+#' Starting values of coefficients for gdrm models
+#'
+#' @param response Response variable.
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param distrib A `[distrib]` object specifying the distribution assumed for the response variable.
+#' @param coef_bounds A list of coefficient bounds. The list should contain an element for each model parameters, and any of those element should be another list containing named elements being numerical vector of lower and upper bounds for parameters.
+#'
+#' @returns Update `mod_comp` setting starting values for the coefficients.
+#'
+#' @export
+gdrm_start <- function(response, mod_comp, distrib, coef_bounds) {
+  start <- distrib$starting_values(response)
+  link_list <- distrib$link_list
+  start <- Map(function(start, link) link$linkfun(start), start = start, link = link_list)
+  
+  for(i in 1:length(mod_comp)) {
+    comp <- mod_comp[[i]]
+    k <- 1
+    for(j in 1:length(comp)) {
+      build <- comp[[j]]
+      for(par_idx in 1:length(build$par)) {
+        bounds <- coef_bounds[[i]][[k]]
+        p <- build$par[par_idx]
+        
+        # Only adjust if bounds are finite and parameter is out of bounds
+        if (!all(is.infinite(bounds))) {
+          if (p <= bounds[1]) {
+            p <- bounds[1] + 0.1
+          }
+          if (p >= bounds[2]) {
+            p <- bounds[2] - 0.01
+          }
+        }
+        
+        build$par[par_idx] <- p
+        k <- k + 1
+      }
+      
+      # update intercept with starting value
+      if(inherits(build, "linear") && "(Intercept)" %in% names(build$par)) {
+        build$par["(Intercept)"] <- start[[i]]
+      }
+      
+      mod_comp[[i]][[j]] <- build
+    }
+  }
+  
+  mod_comp
+}
