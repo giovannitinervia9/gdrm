@@ -657,6 +657,33 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
 }
 
 
+#' Loglikelihood function of gdrm model
+#'
+#' @param response Response variable.
+#' @param distrib A `[distrib]` object.
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @param penalty Logical. If `TRUE` (default) the penalty term is added to the loglikelihood.
+#'
+#' @returns A numeric value which is the loglikelihood of the gdrm model.
+#'
+#' @export
+gdrm_loglik <- function(response, distrib, mod_comp, penalty = TRUE) {
+  ll <- distrib$loglik
+  
+  theta <- gdrm_fitted(mod_comp, distrib)
+  
+  if (penalty) {
+    P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+    par <- gdrm_coef_vector(mod_comp)
+    pen <- drop(t(par)%*%P%*%par)
+  } else {
+    pen <- 0
+  }
+
+  ll(response, theta) + pen
+}
+
+
 #' Generalized distributional regression models
 #' Fits generalized distributional regression models, which are models in which any parameters of a distribution can be modelled as a function (linear, non-linear or both) of covariates.
 #'
