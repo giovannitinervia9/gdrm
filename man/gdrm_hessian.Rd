@@ -4,7 +4,7 @@
 \alias{gdrm_hessian}
 \title{Hessian of loglikelihood of gdrm model}
 \usage{
-gdrm_hessian(response, distrib, mod_comp, sum = TRUE)
+gdrm_hessian(response, distrib, mod_comp, sum = TRUE, penalty = TRUE)
 }
 \arguments{
 \item{response}{Response variable.}
@@ -14,6 +14,8 @@ gdrm_hessian(response, distrib, mod_comp, sum = TRUE)
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{sum}{Logical. If \code{TRUE} (default) the hessian is returned, else if \code{FALSE} the individual contributions to the hessian are returned.}
+
+\item{penalty}{Logical. If \code{TRUE} (default) the penalized hessian is returned.}
 }
 \value{
 Hessian of loglikelihood function.

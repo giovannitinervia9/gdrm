@@ -162,9 +162,6 @@ gdrm_penalty <- function(mod_comp, hyperpar = TRUE) {
   Plist <- vector("list", npar)
   names(Plist) <- names(mod_comp)
 
-  i <- j <- 1
-  j <- 2
-
   for (i in 1:npar) {
     ncomp <- length(mod_comp[[i]])
     for (j in 1:ncomp) {
@@ -318,11 +315,12 @@ gdrm_eta2_beta2 <- function(mod_comp) {
 #' @param distrib A `[distrib]` object.
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param sum Logical. If `TRUE` (default) the gradient is return, else if `FALSE` the individual contributions to gradient are returned.
+#' @param penalty Logical. If `TRUE` (default) the penalized gradient is returned.
 #'
 #' @returns Gradient of loglikelihood function.
 #'
 #' @export
-gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE) {
+gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
   l_theta <- gdrm_l_theta(response, mod_comp, distrib)
 
   theta_eta <- gdrm_theta_eta(mod_comp, distrib)
@@ -342,6 +340,19 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE) {
 
   if (sum) {
     grad_list <- lapply(grad_list, colSums)
+    if (penalty) {
+      par <- lapply(gdrm_coef(mod_comp), unlist)
+      P <- Map(function(P, par) drop(2*P%*%par), P = gdrm_penalty(mod_comp), par = par)
+      grad_list <- Map(function(g, P) g + P, g = grad_list, P = P)
+    }
+  } else {
+
+    if (penalty) {
+      n <- length(l_theta$mu)
+      par <- lapply(gdrm_coef(mod_comp), unlist)
+      P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
+      grad_list <- Map(function(g, P) apply(g, 1, function(gi) gi + P), g = grad_list, P = P)
+    }
   }
 
   grad_list
@@ -354,11 +365,12 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE) {
 #' @param distrib A `[distrib]` object.
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param sum Logical. If `TRUE` (default) the hessian is returned, else if `FALSE` the individual contributions to the hessian are returned.
+#' @param penalty Logical. If `TRUE` (default) the penalized hessian is returned.
 #'
 #' @returns Hessian of loglikelihood function.
 #'
 #' @export
-gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE) {
+gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
   l_theta <- gdrm_l_theta(response, mod_comp, distrib)
   l2_theta2 <- gdrm_l2_theta2(response, mod_comp, distrib)
 
@@ -494,7 +506,21 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE) {
   # Sum over observations if requested
   if (sum) {
     h <- Reduce("+", h_list)
+
+    if (penalty) {
+      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+      h <- h + 2*P
+    }
+
+
   } else {
+
+    if (penalty) {
+      n <- length(l_theta[[1]])
+      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))/n
+      h_list <- lapply(h_list, function(h) h + 2*P)
+    }
+
     h <- simplify2array(h_list)
   }
 

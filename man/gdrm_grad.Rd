@@ -4,7 +4,7 @@
 \alias{gdrm_grad}
 \title{Gradient of loglikelihood of gdrm model}
 \usage{
-gdrm_grad(response, distrib, mod_comp, sum = TRUE)
+gdrm_grad(response, distrib, mod_comp, sum = TRUE, penalty = TRUE)
 }
 \arguments{
 \item{response}{Response variable.}
@@ -14,6 +14,8 @@ gdrm_grad(response, distrib, mod_comp, sum = TRUE)
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{sum}{Logical. If \code{TRUE} (default) the gradient is return, else if \code{FALSE} the individual contributions to gradient are returned.}
+
+\item{penalty}{Logical. If \code{TRUE} (default) the penalized gradient is returned.}
 }
 \value{
 Gradient of loglikelihood function.
