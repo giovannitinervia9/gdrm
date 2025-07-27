@@ -45,7 +45,7 @@ gdrm_fitted <- function(mod_comp, distrib) {
 gdrm_coef <- function(mod_comp) {
   par_list <- vector("list", length(mod_comp))
   names(par_list) <- names(mod_comp)
-
+  
   for (j in 1:length(par_list)) {
     comp <- mod_comp[[j]]
     for (i in 1:length(comp)) {
@@ -53,7 +53,7 @@ gdrm_coef <- function(mod_comp) {
       names(par_list[[j]])[i] <- names(comp)[i]
     }
   }
-
+  
   par_list
 }
 
@@ -68,11 +68,11 @@ gdrm_coef <- function(mod_comp) {
 gdrm_coef_vector <- function(mod_comp) {
   coef_vector <- c()
   
-  for (comp_name in names(mod_comp)) {
-    comp <- mod_comp[[comp_name]]
+  for (i in 1:length(mod_comp)) {
+    comp <- mod_comp[[i]]
     
-    for (build_name in names(comp)) {
-      build <- comp[[build_name]]
+    for (j in 1:length(comp)) {
+      build <- comp[[j]]
       # Each build always has a 'par' element
       coef_vector <- c(coef_vector, build$par)
     }
@@ -80,7 +80,6 @@ gdrm_coef_vector <- function(mod_comp) {
   
   return(coef_vector)
 }
-
 
 #' Update parameters of a gdrm model
 #'
@@ -101,11 +100,11 @@ gdrm_update_coef <- function(par, mod_comp) {
   count_parameters <- function(mod_comp) {
     total_params <- 0
     
-    for (comp_name in names(mod_comp)) {
-      comp <- mod_comp[[comp_name]]
+    for (i in 1:length(mod_comp)) {
+      comp <- mod_comp[[i]]
       
-      for (build_name in names(comp)) {
-        build <- comp[[build_name]]
+      for (j in 1:length(comp)) {
+        build <- comp[[j]]
         # Each build always has a 'par' element
         total_params <- total_params + length(build$par)
       }
@@ -123,11 +122,11 @@ gdrm_update_coef <- function(par, mod_comp) {
   }
   
   # Update parameters - simplified since each component always has 'par'
-  for (comp_name in names(updated_mod)) {
-    comp <- updated_mod[[comp_name]]
+  for (i in 1:length(updated_mod)) {
+    comp <- updated_mod[[i]]
     
-    for (build_name in names(comp)) {
-      build <- comp[[build_name]]
+    for (j in 1:length(comp)) {
+      build <- comp[[j]]
       
       # Each build always has a 'par' element
       n_params <- length(build$par)
@@ -140,9 +139,135 @@ gdrm_update_coef <- function(par, mod_comp) {
           names(new_params) <- names(build$par)
         }
         
-        updated_mod[[comp_name]][[build_name]]$par <- new_params
+        updated_mod[[i]][[j]]$par <- new_params
         par_idx <- par_idx + n_params
       }
+    }
+  }
+  
+  return(updated_mod)
+}
+
+
+#' Hyperparameters of gdrm model
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#' @return A list containing the hyperparameters for each component of the model.
+#' @export
+gdrm_hyperpar <- function(mod_comp) {
+  par_list <- vector("list", length(mod_comp))
+  names(par_list) <- names(mod_comp)
+
+  for (j in 1:length(par_list)) {
+    comp <- mod_comp[[j]]
+    for (i in 1:length(comp)) {
+      par_list[[j]][[i]] <- comp[[i]]$hyperpar
+      names(par_list[[j]])[i] <- names(comp)[i]
+    }
+  }
+
+  par_list
+}
+
+
+#' Extract hyperparameters of gdrm model in a numerical vector
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#'
+#' @returns A numeric vector containing the hyperparameters of the gdrm model.
+#'
+#' @export
+gdrm_hyperpar_vector <- function(mod_comp) {
+  coef_vector <- c()
+  
+  for (i in 1:length(mod_comp)) {
+    comp <- mod_comp[[i]]
+    
+    for (j in 1:length(comp)) {
+      build <- comp[[j]]
+      # Each build always has a 'par' element
+      coef_vector <- c(coef_vector, build$hyperpar)
+    }
+  }
+  
+  unlist(coef_vector)
+}
+
+
+#' Update hyperparameters of a gdrm model
+#'
+#' @param par A numeric vector of updated hyperparameters of a gdrm model.
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#'
+#' @returns A new `mod_comp` object with updated hyperparameters.
+#'
+#' @export
+gdrm_update_hyperpar <- function(par, mod_comp) {
+  # Create a deep copy of mod_comp to avoid modifying the original
+  updated_mod <- mod_comp
+  
+  # Initialize parameter index counter
+  par_idx <- 1
+  
+  # Helper function to recursively update hyperparameters
+  update_hyperpar_recursive <- function(hyperpar_structure, par_vector, start_idx) {
+    if (is.numeric(hyperpar_structure) && length(hyperpar_structure) == 1) {
+      # Simple scalar hyperparameter
+      return(list(value = par_vector[start_idx], next_idx = start_idx + 1))
+    } else if (is.list(hyperpar_structure)) {
+      # Nested list structure
+      updated_structure <- hyperpar_structure
+      current_idx <- start_idx
+      
+      for (i in 1:length(hyperpar_structure)) {
+        result <- update_hyperpar_recursive(hyperpar_structure[[i]], par_vector, current_idx)
+        updated_structure[[i]] <- result$value
+        current_idx <- result$next_idx
+      }
+      
+      return(list(value = updated_structure, next_idx = current_idx))
+    } else {
+      # Handle other cases (shouldn't occur with proper hyperpar structure)
+      return(list(value = hyperpar_structure, next_idx = start_idx))
+    }
+  }
+  
+  # Function to get the total number of hyperparameters needed
+  count_hyperparameters <- function(mod_comp) {
+    total_params <- 0
+    
+    for (i in 1:length(mod_comp)) {
+      comp <- mod_comp[[i]]
+      
+      for (j in 1:length(comp)) {
+        build <- comp[[j]]
+        # Each build always has a 'hyperpar' element
+        total_params <- total_params + length(unlist(build$hyperpar))
+      }
+    }
+    
+    return(total_params)
+  }
+  
+  # Check if the parameter vector length matches expected
+  expected_params <- count_hyperparameters(mod_comp)
+  if (length(par) != expected_params) {
+    stop(paste("Parameter vector length (", length(par), 
+               ") does not match expected number of hyperparameters (", 
+               expected_params, ")", sep = ""))
+  }
+  
+  # Update hyperparameters following the same order as gdrm_hyperpar_vector
+  for (i in 1:length(updated_mod)) {
+    comp <- updated_mod[[i]]
+    
+    for (j in 1:length(comp)) {
+      build <- comp[[j]]
+      
+      # Update hyperparameters using recursive function
+      result <- update_hyperpar_recursive(build$hyperpar, par, par_idx)
+      updated_mod[[i]][[j]]$hyperpar <- result$value
+      par_idx <- result$next_idx
     }
   }
   
