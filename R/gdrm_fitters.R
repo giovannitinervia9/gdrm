@@ -53,9 +53,6 @@ gdrm_sa <- function(
   # id of coefficients relative to its model parameter
   coef_id <- rep(1:n_param_groups, ncoefs)
   
-  # id of coefficients relative to its model parameter
-  coef_id <- rep(1:npar, ncoefs)
-
   # coef names
   coef_names <- get_coef_names(mod_comp)
   

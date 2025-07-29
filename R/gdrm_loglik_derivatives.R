@@ -141,7 +141,7 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
     if (penalty) {
       par <- lapply(gdrm_coef(mod_comp), unlist)
       P <- Map(function(P, par) drop(2*P%*%par), P = gdrm_penalty(mod_comp), par = par)
-      grad_list <- Map(function(g, P) g + P, g = grad_list, P = P)
+      grad_list <- Map(function(g, P) g - P, g = grad_list, P = P)
     }
   } else {
 
@@ -149,7 +149,7 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
       n <- length(l_theta$mu)
       par <- lapply(gdrm_coef(mod_comp), unlist)
       P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
-      grad_list <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "+"), grad_list, P)
+      grad_list <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "-"), grad_list, P)
     }
   }
 
@@ -308,7 +308,7 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
 
     if (penalty) {
       P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
-      h <- h + 2*P
+      h <- h - 2*P
     }
 
 
@@ -317,7 +317,7 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
     if (penalty) {
       n <- length(l_theta[[1]])
       P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))/n
-      h_list <- lapply(h_list, function(h) h + 2*P)
+      h_list <- lapply(h_list, function(h) h - 2*P)
     }
 
     h <- simplify2array(h_list)
@@ -354,7 +354,7 @@ gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE
 
     if (penalty) {
       P <- Map(function(P, par) drop(2*P%*%par), P = gdrm_penalty(mod_comp), par = par)
-      g <- Map(function(g, P) g + P, g = g, P = P)
+      g <- Map(function(g, P) g - P, g = g, P = P)
     }
 
   } else {
@@ -363,7 +363,7 @@ gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE
     if (penalty) {
       n <- NROW(g[[1]])
       P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
-      g <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "+"), g, P)
+      g <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "-"), g, P)
     }
   }
 
@@ -403,7 +403,7 @@ gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = T
 
     if (penalty) {
       P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
-      hess <- hess + 2*P
+      hess <- hess - 2*P
     }
   } else {
 
@@ -419,7 +419,7 @@ gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = T
 
     if (penalty) {
       P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))/n
-      hess + array(2*P, dim = c(k, k, n))
+      hess - array(2*P, dim = c(k, k, n))
     }
   }
   hess
@@ -449,5 +449,5 @@ gdrm_loglik <- function(response, distrib, mod_comp, penalty = TRUE) {
     pen <- 0
   }
 
-  ll(response, theta) + pen
+  ll(response, theta) - pen
 }
