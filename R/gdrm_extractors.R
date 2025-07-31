@@ -4,13 +4,16 @@
 #' @return A list of predicted values on link scale.
 #' @export
 gdrm_predict <- function(mod_comp) {
-  lapply(mod_comp, function(mod_par) {
-    res <- 0
-    for (comp in mod_par) {
-      res <- res + comp$fitted(comp$par)
+  out <- vector("list", length(mod_comp))
+  names(out) <- names(mod_comp)
+  for (i in 1:length(mod_comp)) {
+    r <- 0
+    for (j in 1:length(mod_comp[[i]])) {
+      r <- r + mod_comp[[i]][[j]]$fitted(mod_comp[[i]][[j]]$par)
     }
-    res
-  })
+    out[[i]] <- r
+  }
+  out
 }
 
 
@@ -21,14 +24,32 @@ gdrm_predict <- function(mod_comp) {
 #' @return A list of predicted values on parameter scale.
 #' @export
 gdrm_fitted <- function(mod_comp, distrib) {
-  eta <- gdrm_predict(mod_comp)
+  out <- gdrm_predict(mod_comp)
   link <- distrib$link_list
-  k <- length(eta)
-  out <- vector("list", k)
-  for (i in seq_len(k)) {
-    out[[i]] <- link[[i]]$linkinv(eta[[i]])
+  for (i in seq_len(length(out))) {
+    out[[i]] <- link[[i]]$linkinv(out[[i]])
   }
   out
+}
+
+
+#' Coefficient names of gdrm model
+#'
+#' @param mod_comp A list of model components from `[interpret_formulae()]`.
+#'
+#' @returns A character vector containing names of the parameters.
+#'
+#' @export
+gdrm_coef_names <- function(mod_comp) {
+  unlist(
+    lapply(names(mod_comp), function(comp_name) {
+      comp <- mod_comp[[comp_name]]
+      lapply(comp, function(build) {
+        paste0(comp_name, ".", build$parameters)
+      })
+    }),
+    use.names = FALSE
+  )
 }
 
 
@@ -38,18 +59,9 @@ gdrm_fitted <- function(mod_comp, distrib) {
 #' @return A list containing the coefficients for each component of the model.
 #' @export
 gdrm_coef <- function(mod_comp) {
-  par_list <- vector("list", length(mod_comp))
-  names(par_list) <- names(mod_comp)
-  
-  for (j in 1:length(par_list)) {
-    comp <- mod_comp[[j]]
-    for (i in 1:length(comp)) {
-      par_list[[j]][[i]] <- comp[[i]]$par
-      names(par_list[[j]])[i] <- names(comp)[i]
-    }
-  }
-  
-  par_list
+  lapply(mod_comp, function(comp) {
+    lapply(comp, `[[`, "par")
+  })
 }
 
 
@@ -62,18 +74,13 @@ gdrm_coef <- function(mod_comp) {
 #' @export
 gdrm_coef_vector <- function(mod_comp) {
   coef_vector <- c()
-  
   for (i in 1:length(mod_comp)) {
-    comp <- mod_comp[[i]]
-    
-    for (j in 1:length(comp)) {
-      build <- comp[[j]]
-      # Each build always has a 'par' element
-      coef_vector <- c(coef_vector, build$par)
+    for (j in 1:length(mod_comp[[i]])) {
+      coef_vector <- c(coef_vector, mod_comp[[i]][[j]]$par)
     }
   }
-  
-  return(coef_vector)
+
+  coef_vector
 }
 
 
@@ -83,18 +90,9 @@ gdrm_coef_vector <- function(mod_comp) {
 #' @return A list containing the hyperparameters for each component of the model.
 #' @export
 gdrm_hyperpar <- function(mod_comp) {
-  par_list <- vector("list", length(mod_comp))
-  names(par_list) <- names(mod_comp)
-
-  for (j in 1:length(par_list)) {
-    comp <- mod_comp[[j]]
-    for (i in 1:length(comp)) {
-      par_list[[j]][[i]] <- comp[[i]]$hyperpar
-      names(par_list[[j]])[i] <- names(comp)[i]
-    }
-  }
-
-  par_list
+  lapply(mod_comp, function(comp) {
+    lapply(comp, `[[`, "hyperpar")
+  })
 }
 
 
@@ -107,18 +105,13 @@ gdrm_hyperpar <- function(mod_comp) {
 #' @export
 gdrm_hyperpar_vector <- function(mod_comp) {
   coef_vector <- c()
-  
   for (i in 1:length(mod_comp)) {
-    comp <- mod_comp[[i]]
-    
-    for (j in 1:length(comp)) {
-      build <- comp[[j]]
-      # Each build always has a 'par' element
-      coef_vector <- c(coef_vector, build$hyperpar)
+    for (j in 1:length(mod_comp[[i]])) {
+      coef_vector <- c(coef_vector, mod_comp[[i]][[j]]$hyperpar)
     }
   }
-  
-  unlist(coef_vector)
+
+  coef_vector
 }
 
 
@@ -134,40 +127,44 @@ gdrm_penalty <- function(mod_comp, hyperpar = TRUE) {
   Plist <- vector("list", npar)
   names(Plist) <- names(mod_comp)
 
-  for (i in 1:npar) {
-    ncomp <- length(mod_comp[[i]])
-    for (j in 1:ncomp) {
-      comp <- mod_comp[[i]][[j]]
+  for (i in seq_along(mod_comp)) {
+    comps <- mod_comp[[i]]
+    Pparam <- vector("list", length(comps))
 
+    for (j in seq_along(comps)) {
+      comp <- comps[[j]]
+
+      ## --- linear / ridge / nl -------------------------------------------
       if (inherits(comp, c("linear", "ridge", "nl"))) {
+        Pmat <- comp$P
         if (hyperpar) {
-          Plist[[i]][[j]] <- comp$hyperpar * comp$P
-        } else {
-          Plist[[i]][[j]] <- comp$P
+          Pmat <- comp$hyperpar * Pmat
         }
-      } else if (inherits(comp, c("smooth"))) {
+        Pparam[[j]] <- Pmat
+
+        ## --- smooth ---------------------------------------------------------
+      } else {
+        Psub <- comp$P
         if (hyperpar) {
-          P <- Map(
-            function(Psub, hsub) {
-              # multiply each corresponding element of the sublists
-              Map(function(Pmat, hval) Pmat * hval, Psub, hsub)
-            },
-            comp$P,
-            comp$hyperpar
-          )
-
-          P <- lapply(P, function(Pj) Reduce(`+`, Pj))
-
-          Plist[[i]][[j]] <- as.matrix(Matrix::bdiag(P))
-        } else {
-          P <- lapply(comp$P, function(Pj) Reduce(`+`, Pj))
-          Plist[[i]][[j]] <- as.matrix(Matrix::bdiag(P))
+          hsub <- comp$hyperpar[[1L]]
+          for (k in seq_along(Psub)) {
+            for (m in seq_along(Psub[[k]])) {
+              Psub[[k]][[m]] <- Psub[[k]][[m]] * hsub[[m]]
+            }
+          }
         }
+
+        for (k in seq_along(Psub)) {
+          Psub[[k]] <- Reduce(`+`, Psub[[k]])
+        }
+
+        Pparam[[j]] <- Matrix::bdiag(Psub)
       }
-
-      names(Plist[[i]])[[j]] <- names(mod_comp[[i]])[j]
+      names(Pparam)[j] <- names(comps)[j]
     }
+
+    Plist[[i]] <- as.matrix(Matrix::bdiag(Pparam))
   }
 
-  lapply(Plist, function(P) as.matrix(Matrix::bdiag(P)))
+  Plist
 }
