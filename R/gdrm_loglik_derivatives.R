@@ -3,10 +3,14 @@
 #' @param response Response variable.
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param distrib A `[distrib]` object.
+#' @param fitted Optional. An object returned by `[gdrm_fitted()]`.
 #' @return A list containing the gradient of the loglikelihood wrt eta for each model parameter.
 #' @export
-gdrm_l_theta <- function(response, mod_comp, distrib) {
-  distrib$grad(response, gdrm_fitted(mod_comp, distrib), sum = FALSE)
+gdrm_l_theta <- function(response, mod_comp, distrib, fitted = NULL) {
+  if (is.null(fitted)) {
+    fitted <- gdrm_fitted(mod_comp, distrib)
+  }
+  distrib$grad(response, fitted, sum = FALSE)
 }
 
 
@@ -16,10 +20,14 @@ gdrm_l_theta <- function(response, mod_comp, distrib) {
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param distrib A `[distrib]` object.
 #' @param expected Logical. If `TRUE` (default) use expected Fisher Information if available.
+#' @param fitted Optional. An object returned by `[gdrm_fitted()]`.
 #' @return A list containing the hessian of the loglikelihood wrt eta for each model parameter.
 #' @export
-gdrm_l2_theta2 <- function(response, mod_comp, distrib, expected = TRUE) {
-  distrib$hess(response, gdrm_fitted(mod_comp, distrib), sum = FALSE, expected = expected)
+gdrm_l2_theta2 <- function(response, mod_comp, distrib, expected = TRUE, fitted = NULL) {
+  if (is.null(fitted)) {
+    fitted <- gdrm_fitted(mod_comp, distrib)
+  }
+  distrib$hess(response, fitted, sum = FALSE, expected = expected)
 }
 
 
@@ -27,16 +35,17 @@ gdrm_l2_theta2 <- function(response, mod_comp, distrib, expected = TRUE) {
 #'
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param distrib A `[distrib]` object.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
 #' @return A list containing the first derivative of theta wrt eta for each model parameter.
 #' @export
-gdrm_theta_eta <- function(mod_comp, distrib) {
-  Map(
-    function(link, eta) {
-      link$theta.eta(eta)
-    },
-    link = distrib$link_list,
-    eta = gdrm_predict(mod_comp)
-  )
+gdrm_theta_eta <- function(mod_comp, distrib, predict = NULL) {
+  if (is.null(predict)) {
+    predict <- gdrm_predict(mod_comp) 
+  }
+  for(i in 1:length(mod_comp)) {
+    predict[[i]] <- distrib$link_list[[i]]$theta.eta(predict[[i]])
+  }
+  predict
 }
 
 
@@ -44,16 +53,17 @@ gdrm_theta_eta <- function(mod_comp, distrib) {
 #'
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param distrib A `[distrib]` object.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
 #' @return A list containing the second derivative of theta wrt eta for each model parameter.
 #' @export
-gdrm_theta2_eta2 <- function(mod_comp, distrib) {
-  Map(
-    function(link, eta) {
-      link$theta2.eta2(eta)
-    },
-    link = distrib$link_list,
-    eta = gdrm_predict(mod_comp)
-  )
+gdrm_theta2_eta2 <- function(mod_comp, distrib, predict = NULL) {
+  if (is.null(predict)) {
+    predict <- gdrm_predict(mod_comp) 
+  }
+  for(i in 1:length(mod_comp)) {
+    predict[[i]] <- distrib$link_list[[i]]$theta2.eta2(predict[[i]])
+  }
+  predict
 }
 
 
@@ -114,14 +124,16 @@ gdrm_eta2_beta2 <- function(mod_comp) {
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param sum Logical. If `TRUE` (default) the gradient is return, else if `FALSE` the individual contributions to gradient are returned.
 #' @param penalty Logical. If `TRUE` (default) the penalized gradient is returned.
-#'
+#' @param P Optional. An object returned by `[gdrm_penalty()]`.
 #' @returns Gradient of loglikelihood function.
 #'
 #' @export
-gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
-  l_theta <- gdrm_l_theta(response, mod_comp, distrib)
+gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL) {
+  predict <- gdrm_predict(mod_comp)
+  fitted <- gdrm_fitted(mod_comp, distrib, predict)
+  l_theta <- gdrm_l_theta(response, mod_comp, distrib, fitted)
 
-  theta_eta <- gdrm_theta_eta(mod_comp, distrib)
+  theta_eta <- gdrm_theta_eta(mod_comp, distrib, predict)
 
   eta_beta <- gdrm_eta_beta(mod_comp)
 
@@ -136,11 +148,17 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
     eta_beta = eta_beta
   )
 
+  if (penalty) {
+    if (is.null(P)) {
+      P <- gdrm_penalty(mod_comp)
+    }
+  }
+
   if (sum) {
     grad_list <- lapply(grad_list, colSums)
     if (penalty) {
       par <- lapply(gdrm_coef(mod_comp), unlist)
-      P <- Map(function(P, par) drop(2*P%*%par), P = gdrm_penalty(mod_comp), par = par)
+      P <- Map(function(P, par) drop(2*P%*%par), P = P, par = par)
       grad_list <- Map(function(g, P) g - P, g = grad_list, P = P)
     }
   } else {
@@ -148,7 +166,7 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE) {
     if (penalty) {
       n <- length(l_theta$mu)
       par <- lapply(gdrm_coef(mod_comp), unlist)
-      P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
+      P <- Map(function(P, par) drop(2*P%*%par)/n, P = P, par = par)
       grad_list <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "-"), grad_list, P)
     }
   }
@@ -432,22 +450,36 @@ gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = T
 #' @param distrib A `[distrib]` object.
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param penalty Logical. If `TRUE` (default) the penalty term is added to the loglikelihood.
-#'
+#' @param fitted Optional. An object returned by `[gdrm_fitted()]`.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
+#' @param P Optional. An object returned by `[gdrm_penalty()]`.
+#' 
 #' @returns A numeric value which is the loglikelihood of the gdrm model.
 #'
 #' @export
-gdrm_loglik <- function(response, distrib, mod_comp, penalty = TRUE) {
+gdrm_loglik <- function(response, distrib, mod_comp, penalty = TRUE, fitted = NULL, predict = NULL, P = NULL) {
   ll <- distrib$loglik
-  
-  theta <- gdrm_fitted(mod_comp, distrib)
-  
+
+  if (is.null(fitted)) {
+    if (is.null(predict)) {
+      predict <- gdrm_predict(mod_comp)
+    }
+    fitted <- gdrm_fitted(mod_comp, distrib, predict)
+  } 
+    
   if (penalty) {
-    P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+
+    if (is.null(P)) {
+      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp))) 
+    } else {
+      P <- as.matrix(Matrix::bdiag(P))
+    }
+    
     par <- gdrm_coef_vector(mod_comp)
     pen <- drop(t(par)%*%P%*%par)
   } else {
     pen <- 0
   }
 
-  ll(response, theta) - pen
+  ll(response, fitted) - pen
 }

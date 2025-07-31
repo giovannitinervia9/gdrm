@@ -4,12 +4,14 @@
 \alias{gdrm_theta2_eta2}
 \title{Second derivative of theta wrt eta of gdrm model}
 \usage{
-gdrm_theta2_eta2(mod_comp, distrib)
+gdrm_theta2_eta2(mod_comp, distrib, predict = NULL)
 }
 \arguments{
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{distrib}{A \verb{[distrib]} object.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
 }
 \value{
 A list containing the second derivative of theta wrt eta for each model parameter.

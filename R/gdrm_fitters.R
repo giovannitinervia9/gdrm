@@ -9,7 +9,7 @@
 #'
 #' @returns A list containing Simulated annealing options.
 #' @export
-sa_control <- function(iter = 30000, t_start = 100, t_end = 1, sd = 1, save_history = TRUE, verbose = TRUE) {
+sa_control <- function(iter = 30000, t_start = 100, t_end = 1, sd = .1, save_history = TRUE, verbose = TRUE) {
   list(
     iter = iter,
     t_start = t_start,
@@ -68,6 +68,7 @@ gdrm_sa <- function(
   const_temp <- log(t_start/t_end)/iter
   temp <- t_start*exp(-const_temp*0:(iter - 1))
 
+
   # set start point
   l0 <- l_best <- gdrm_loglik(response, distrib, mod_comp, penalty = FALSE)
   map_par0 <- map_par_best <- gdrm_map_coef(mod_comp, map_functions)
@@ -92,7 +93,7 @@ gdrm_sa <- function(
     mod_comp1 <- gdrm_update_coef(par1, mod_comp)
 
     # compute loglikelihood with new par
-    l1 <- gdrm_loglik(response, distrib, mod_comp1, penalty = FALSE)
+    l1 <- gdrm_loglik(response, distrib, mod_comp, penalty = FALSE)
 
     # compute delta (we want it to be greater than 0)
     delta <- l1 - l0

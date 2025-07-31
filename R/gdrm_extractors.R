@@ -17,17 +17,21 @@ gdrm_predict <- function(mod_comp) {
 }
 
 
-#' Predicted values on parameter scale
+#' Fitted values on parameter scale
 #'
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param distrib A `[distrib]` object.
-#' @return A list of predicted values on parameter scale.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
+#' @return A list of fitted values on parameter scale.
 #' @export
-gdrm_fitted <- function(mod_comp, distrib) {
-  out <- gdrm_predict(mod_comp)
+gdrm_fitted <- function(mod_comp, distrib, predict = NULL) {
+  if (is.null(predict)) {
+    predict <- gdrm_predict(mod_comp)
+  }
+  out <- vector("list", length(mod_comp))
   link <- distrib$link_list
-  for (i in seq_len(length(out))) {
-    out[[i]] <- link[[i]]$linkinv(out[[i]])
+  for (i in seq_len(length(predict))) {
+    out[[i]] <- link[[i]]$linkinv(predict[[i]])
   }
   out
 }

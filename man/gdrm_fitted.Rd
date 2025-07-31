@@ -2,18 +2,20 @@
 % Please edit documentation in R/gdrm_extractors.R
 \name{gdrm_fitted}
 \alias{gdrm_fitted}
-\title{Predicted values on parameter scale}
+\title{Fitted values on parameter scale}
 \usage{
-gdrm_fitted(mod_comp, distrib)
+gdrm_fitted(mod_comp, distrib, predict = NULL)
 }
 \arguments{
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{distrib}{A \verb{[distrib]} object.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
 }
 \value{
-A list of predicted values on parameter scale.
+A list of fitted values on parameter scale.
 }
 \description{
-Predicted values on parameter scale
+Fitted values on parameter scale
 }

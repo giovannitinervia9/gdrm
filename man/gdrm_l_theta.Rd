@@ -4,7 +4,7 @@
 \alias{gdrm_l_theta}
 \title{Gradient of the loglikelihood function wrt theta of gdrm model}
 \usage{
-gdrm_l_theta(response, mod_comp, distrib)
+gdrm_l_theta(response, mod_comp, distrib, fitted = NULL)
 }
 \arguments{
 \item{response}{Response variable.}
@@ -12,6 +12,8 @@ gdrm_l_theta(response, mod_comp, distrib)
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{distrib}{A \verb{[distrib]} object.}
+
+\item{fitted}{Optional. An object returned by \verb{[gdrm_fitted()]}.}
 }
 \value{
 A list containing the gradient of the loglikelihood wrt eta for each model parameter.

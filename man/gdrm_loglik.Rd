@@ -4,7 +4,15 @@
 \alias{gdrm_loglik}
 \title{Loglikelihood function of gdrm model}
 \usage{
-gdrm_loglik(response, distrib, mod_comp, penalty = TRUE)
+gdrm_loglik(
+  response,
+  distrib,
+  mod_comp,
+  penalty = TRUE,
+  fitted = NULL,
+  predict = NULL,
+  P = NULL
+)
 }
 \arguments{
 \item{response}{Response variable.}
@@ -14,6 +22,12 @@ gdrm_loglik(response, distrib, mod_comp, penalty = TRUE)
 \item{mod_comp}{A list of model components from \verb{[interpret_formulae()]}.}
 
 \item{penalty}{Logical. If \code{TRUE} (default) the penalty term is added to the loglikelihood.}
+
+\item{fitted}{Optional. An object returned by \verb{[gdrm_fitted()]}.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
+
+\item{P}{Optional. An object returned by \verb{[gdrm_penalty()]}.}
 }
 \value{
 A numeric value which is the loglikelihood of the gdrm model.

@@ -8,7 +8,7 @@ sa_control(
   iter = 30000,
   t_start = 100,
   t_end = 1,
-  sd = 1,
+  sd = 0.1,
   save_history = TRUE,
   verbose = TRUE
 )
