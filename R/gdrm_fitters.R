@@ -93,7 +93,7 @@ gdrm_sa <- function(
     mod_comp1 <- gdrm_update_coef(par1, mod_comp)
 
     # compute loglikelihood with new par
-    l1 <- gdrm_loglik(response, distrib, mod_comp, penalty = FALSE)
+    l1 <- gdrm_loglik(response, distrib, mod_comp1, penalty = FALSE)
 
     # compute delta (we want it to be greater than 0)
     delta <- l1 - l0

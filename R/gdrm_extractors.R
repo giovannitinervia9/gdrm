@@ -29,6 +29,7 @@ gdrm_fitted <- function(mod_comp, distrib, predict = NULL) {
     predict <- gdrm_predict(mod_comp)
   }
   out <- vector("list", length(mod_comp))
+  names(out) <- names(mod_comp)
   link <- distrib$link_list
   for (i in seq_len(length(predict))) {
     out[[i]] <- link[[i]]$linkinv(predict[[i]])

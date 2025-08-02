@@ -129,6 +129,7 @@ gdrm_eta2_beta2 <- function(mod_comp) {
 #'
 #' @export
 gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL) {
+  npar <- length(mod_comp)
   predict <- gdrm_predict(mod_comp)
   fitted <- gdrm_fitted(mod_comp, distrib, predict)
   l_theta <- gdrm_l_theta(response, mod_comp, distrib, fitted)
@@ -139,35 +140,32 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P
 
   eta_beta <- lapply(eta_beta, function(x) do.call(cbind, x))
 
-  grad_list <- Map(
-    function(l_theta, theta_eta, eta_beta) {
-      l_theta * theta_eta * eta_beta
-    },
-    l_theta = l_theta,
-    theta_eta = theta_eta,
-    eta_beta = eta_beta
-  )
+  grad_list <- vector("list", npar)
+  names(grad_list) <- names(mod_comp)
+
+  for(j in 1:npar) {
+    if (sum) {
+      grad_list[[j]] <- drop(crossprod(l_theta[[j]]*theta_eta[[j]], eta_beta[[j]]))
+    } else {
+      grad_list[[j]] <- l_theta[[j]]*theta_eta[[j]]*eta_beta[[j]]
+    }    
+  }
 
   if (penalty) {
     if (is.null(P)) {
       P <- gdrm_penalty(mod_comp)
     }
-  }
+    par <- lapply(gdrm_coef(mod_comp), unlist)
 
-  if (sum) {
-    grad_list <- lapply(grad_list, colSums)
-    if (penalty) {
-      par <- lapply(gdrm_coef(mod_comp), unlist)
-      P <- Map(function(P, par) drop(2*P%*%par), P = P, par = par)
-      grad_list <- Map(function(g, P) g - P, g = grad_list, P = P)
-    }
-  } else {
-
-    if (penalty) {
-      n <- length(l_theta$mu)
-      par <- lapply(gdrm_coef(mod_comp), unlist)
-      P <- Map(function(P, par) drop(2*P%*%par)/n, P = P, par = par)
-      grad_list <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "-"), grad_list, P)
+    if (sum) {
+      for(j in 1:npar) {
+        grad_list[[j]] <- grad_list[[j]] - 2*drop(P[[j]] %*% par[[j]])
+      }
+    } else {
+      n <- length(l_theta[[1]])
+      for(j in 1:npar) {
+        grad_list[[j]] <- sweep(grad_list[[j]], 2, drop(2*P[[j]]%*%par[[j]])/n, "-")
+      }
     }
   }
 
