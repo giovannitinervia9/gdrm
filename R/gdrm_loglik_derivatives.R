@@ -125,13 +125,22 @@ gdrm_eta2_beta2 <- function(mod_comp) {
 #' @param sum Logical. If `TRUE` (default) the gradient is return, else if `FALSE` the individual contributions to gradient are returned.
 #' @param penalty Logical. If `TRUE` (default) the penalized gradient is returned.
 #' @param P Optional. An object returned by `[gdrm_penalty()]`.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
+#' @param fitted Optional. An object returned by `[gdrm_fitted()]`.
 #' @returns Gradient of loglikelihood function.
 #'
 #' @export
-gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL) {
+gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL, predict = NULL, fitted = NULL) {
+
+  if (is.null(fitted)) {
+    if (is.null(predict)) {
+      predict <- gdrm_predict(mod_comp)
+    }
+    fitted <- gdrm_fitted(mod_comp, distrib, predict)
+  }
+
+
   npar <- length(mod_comp)
-  predict <- gdrm_predict(mod_comp)
-  fitted <- gdrm_fitted(mod_comp, distrib, predict)
   l_theta <- gdrm_l_theta(response, mod_comp, distrib, fitted)
 
   theta_eta <- gdrm_theta_eta(mod_comp, distrib, predict)
@@ -180,17 +189,30 @@ gdrm_grad <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P
 #' @param mod_comp A list of model components from `[interpret_formulae()]`.
 #' @param sum Logical. If `TRUE` (default) the hessian is returned, else if `FALSE` the individual contributions to the hessian are returned.
 #' @param penalty Logical. If `TRUE` (default) the penalized hessian is returned.
+#' @param P. Optional. An object returned by `[gdrm_penalty()]`.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
+#' @param fitted Optional. An object returned by `[gdrm_fitted()]`.
 #' @param expected Logical. If `TRUE` (default) use expected Fisher Information if available.
 #'
 #' @returns Hessian of loglikelihood function.
 #'
 #' @export
-gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, expected = TRUE) {
-  l_theta <- gdrm_l_theta(response, mod_comp, distrib)
-  l2_theta2 <- gdrm_l2_theta2(response, mod_comp, distrib, expected = expected)
+gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL, 
+  predict = NULL, fitted = NULL, expected = TRUE) {
 
-  theta_eta <- gdrm_theta_eta(mod_comp, distrib)
-  theta2_eta2 <- gdrm_theta2_eta2(mod_comp, distrib)
+  if (is.null(fitted)) {
+    if (is.null(predict)) {
+      predict <- gdrm_predict(mod_comp)
+    }
+    fitted <- gdrm_fitted(mod_comp, distrib, predict)
+  }
+  
+  
+  l_theta <- gdrm_l_theta(response, mod_comp, distrib, fitted)
+  l2_theta2 <- gdrm_l2_theta2(response, mod_comp, distrib, expected = expected, fitted)
+
+  theta_eta <- gdrm_theta_eta(mod_comp, distrib, predict)
+  theta2_eta2 <- gdrm_theta2_eta2(mod_comp, distrib, predict)
 
   eta_beta <- gdrm_eta_beta(mod_comp)
   eta2_beta2 <- gdrm_eta2_beta2(mod_comp)
@@ -318,12 +340,20 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
     }
   }
 
+  if (penalty) {
+    if (is.null(P)) {
+      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+    } else {
+      P <- as.matrix(Matrix::bdiag(P))
+    }  
+  }
+
   # Sum over observations if requested
   if (sum) {
     h <- Reduce("+", h_list)
 
     if (penalty) {
-      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+      
       h <- h - 2*P
     }
 
@@ -332,7 +362,7 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
 
     if (penalty) {
       n <- length(l_theta[[1]])
-      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))/n
+      P <- P/n
       h_list <- lapply(h_list, function(h) h - 2*P)
     }
 
@@ -351,25 +381,36 @@ gdrm_hessian <- function(response, distrib, mod_comp, sum = TRUE, penalty = TRUE
 #' @param map_functions A list of functions to map parameters from constrained to real line created by [`make_map_function()`].
 #' @param sum Logical. If `TRUE` (default) the gradient is return, else if `FALSE` the individual contributions to gradient are returned.
 #' @param penalty Logical. If `TRUE` (default) the penalized gradient is returned.
+#' @param P. Optional. An object returned by `[gdrm_penalty()]`.
+#' @param predict Optional. An object returned by `[gdrm_predict()]`.
+#' @param fitted Optional. An object returned by `[gdrm_fitted()]`.
 #'
 #' @returns Mapped Gradient of loglikelihood function.
 #'
 #' @export
-gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE, penalty = TRUE) {
+gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE, penalty = TRUE, P = NULL,
+predict = NULL, fitted = NULL) {
 
   par <- lapply(gdrm_coef(mod_comp), unlist)
 
   invert_jacobian <- lapply(map_functions, function(map) map$invert_jacobian)
 
   j <- Map(function(j, par) j(par), j = invert_jacobian, par = par)
-  g <- gdrm_grad(response, distrib, mod_comp, sum, penalty = FALSE)
+  g <- gdrm_grad(response, distrib, mod_comp, sum = sum, penalty = FALSE,
+    predict = predict, fitted = fitted)
+
+  if (penalty) { 
+    if (is.null(P)) {
+        P <- gdrm_penalty(mod_comp)
+      }
+  }
 
   if (sum) {
     
     g <- Map(function(g, j) g*j, g = g, j = j)
-
+    
     if (penalty) {
-      P <- Map(function(P, par) drop(2*P%*%par), P = gdrm_penalty(mod_comp), par = par)
+      P <- Map(function(P, par) drop(2*P%*%par), P = P, par = par)
       g <- Map(function(g, P) g - P, g = g, P = P)
     }
 
@@ -378,7 +419,7 @@ gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE
 
     if (penalty) {
       n <- NROW(g[[1]])
-      P <- Map(function(P, par) drop(2*P%*%par)/n, P = gdrm_penalty(mod_comp), par = par)
+      P <- Map(function(P, par) drop(2*P%*%par)/n, P = P, par = par)
       g <- Map(function(g_matrix, P_vector) sweep(g_matrix, 2, P_vector, "-"), g, P)
     }
   }
@@ -400,7 +441,8 @@ gdrm_grad_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE
 #' @returns Mapped Hessian of loglikelihood function.
 #'
 #' @export
-gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE, penalty = TRUE, expected = TRUE) {
+gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = TRUE, penalty = TRUE, P = NULL,
+   expected = TRUE, predict = NULL, fitted = NULL) {
 
   par <- lapply(gdrm_coef(mod_comp), unlist)
 
@@ -411,14 +453,20 @@ gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = T
   dj <- diag(j)
   h <- unlist(Map(function(h, par) h(par), h = invert_hessian, par = par))
   
-  hess <- gdrm_hessian(response, distrib, mod_comp, sum, penalty = FALSE)
+  hess <- gdrm_hessian(response, distrib, mod_comp, sum, penalty = FALSE, predict = predict,
+  fitted = fitted, expected = expected)
 
   if (sum) {
-    g <- unlist(gdrm_grad(response, distrib, mod_comp, sum))
+    g <- unlist(gdrm_grad(response, distrib, mod_comp, sum, predict = predict, fitted = fitted))
     hess <- dj%*%hess%*%dj + diag(g*h)
 
     if (penalty) {
-      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+      if (is.null(P)){
+        P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))
+      } else {
+        P <- as.matrix(Matrix::bdiag(P))
+      }
+      
       hess <- hess - 2*P
     }
   } else {
@@ -434,7 +482,10 @@ gdrm_hessian_map <- function(response, distrib, mod_comp, map_functions, sum = T
     hess <- result
 
     if (penalty) {
-      P <- as.matrix(Matrix::bdiag(gdrm_penalty(mod_comp)))/n
+      if (is.null(P)) {
+        P <- gdrm_penalty(mod_comp)
+      }
+      P <- as.matrix(Matrix::bdiag(P))/n
       hess - array(2*P, dim = c(k, k, n))
     }
   }
