@@ -4,7 +4,16 @@
 \alias{gdrm_grad}
 \title{Gradient of loglikelihood of gdrm model}
 \usage{
-gdrm_grad(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL)
+gdrm_grad(
+  response,
+  distrib,
+  mod_comp,
+  sum = TRUE,
+  penalty = TRUE,
+  P = NULL,
+  predict = NULL,
+  fitted = NULL
+)
 }
 \arguments{
 \item{response}{Response variable.}
@@ -18,6 +27,10 @@ gdrm_grad(response, distrib, mod_comp, sum = TRUE, penalty = TRUE, P = NULL)
 \item{penalty}{Logical. If \code{TRUE} (default) the penalized gradient is returned.}
 
 \item{P}{Optional. An object returned by \verb{[gdrm_penalty()]}.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
+
+\item{fitted}{Optional. An object returned by \verb{[gdrm_fitted()]}.}
 }
 \value{
 Gradient of loglikelihood function.

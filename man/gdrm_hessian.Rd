@@ -10,6 +10,9 @@ gdrm_hessian(
   mod_comp,
   sum = TRUE,
   penalty = TRUE,
+  P = NULL,
+  predict = NULL,
+  fitted = NULL,
   expected = TRUE
 )
 }
@@ -23,6 +26,12 @@ gdrm_hessian(
 \item{sum}{Logical. If \code{TRUE} (default) the hessian is returned, else if \code{FALSE} the individual contributions to the hessian are returned.}
 
 \item{penalty}{Logical. If \code{TRUE} (default) the penalized hessian is returned.}
+
+\item{P}{Optional. An object returned by \verb{[gdrm_penalty()]}.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
+
+\item{fitted}{Optional. An object returned by \verb{[gdrm_fitted()]}.}
 
 \item{expected}{Logical. If \code{TRUE} (default) use expected Fisher Information if available.}
 }

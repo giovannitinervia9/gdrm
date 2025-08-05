@@ -11,7 +11,12 @@ gdrm_hessian_map(
   map_functions,
   sum = TRUE,
   penalty = TRUE,
-  expected = TRUE
+  P = NULL,
+  expected = TRUE,
+  predict = NULL,
+  fitted = NULL,
+  g = NULL,
+  hess = NULL
 )
 }
 \arguments{
@@ -27,7 +32,17 @@ gdrm_hessian_map(
 
 \item{penalty}{Logical. If \code{TRUE} (default) the penalized hessian is returned.}
 
+\item{P}{Optional. An object returned by \verb{[gdrm_penalty()]}.}
+
 \item{expected}{Logical. If \code{TRUE} (default) use expected Fisher Information if available.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
+
+\item{fitted}{Optional. An object returned by \verb{[gdrm_fitted()]}.}
+
+\item{g}{Optional. An object returned by \verb{[gdrm_grad()]} with \code{penalty = FALSE} and \code{sum} argument as specified in the call of this function.}
+
+\item{hess}{Optional. An object returned by \verb{[gdrm_hessian()]} with \code{penalty = FALSE} and \code{sum} argument as specified in the call of this function.}
 }
 \value{
 Mapped Hessian of loglikelihood function.

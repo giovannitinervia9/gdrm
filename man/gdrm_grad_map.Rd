@@ -10,7 +10,11 @@ gdrm_grad_map(
   mod_comp,
   map_functions,
   sum = TRUE,
-  penalty = TRUE
+  penalty = TRUE,
+  P = NULL,
+  predict = NULL,
+  fitted = NULL,
+  g = NULL
 )
 }
 \arguments{
@@ -25,6 +29,14 @@ gdrm_grad_map(
 \item{sum}{Logical. If \code{TRUE} (default) the gradient is return, else if \code{FALSE} the individual contributions to gradient are returned.}
 
 \item{penalty}{Logical. If \code{TRUE} (default) the penalized gradient is returned.}
+
+\item{P}{Optional. An object returned by \verb{[gdrm_penalty()]}.}
+
+\item{predict}{Optional. An object returned by \verb{[gdrm_predict()]}.}
+
+\item{fitted}{Optional. An object returned by \verb{[gdrm_fitted()]}.}
+
+\item{g}{Optional. An object returned by \verb{[gdrm_grad()]} with \code{penalty = FALSE} and \code{sum} argument as specified in the call of this function.}
 }
 \value{
 Mapped Gradient of loglikelihood function.
