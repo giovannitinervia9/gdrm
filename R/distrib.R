@@ -73,6 +73,29 @@
 NULL
 
 
+#' Print method for distrib objects
+#'
+#' @param x A `distrib` object
+#' @param ... Additional arguments (ignored)
+#'
+#' @return Invisibly returns the input object
+#'
+#' @export
+print.distrib <- function(x, ...) {
+  
+  # Extract link names
+  link_names <- sapply(x$link_list, function(link) link$name)
+  
+  # Format parameter info
+  param_info <- paste0(x$parameters, "(", link_names, ")", collapse = ", ")
+  
+  cat("\nFamily:", x$distrib, "\n")
+  cat("Link functions:", param_info, "\n\n")
+  
+  invisible(x)
+}
+
+
 #' Normal distribution (\eqn{\mu, \sigma^2} parametrization)
 #'
 #' @description

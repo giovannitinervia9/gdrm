@@ -7,7 +7,7 @@
 adam_control(
   maxit = 1e+05,
   grad_tol = 1e-06,
-  param_tol = 1e-10,
+  param_tol = 1e-06,
   require_both = FALSE,
   alpha = 0.1,
   beta1 = 0.9,

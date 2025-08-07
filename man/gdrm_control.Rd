@@ -4,12 +4,26 @@
 \alias{gdrm_control}
 \title{Control options for gdrm()}
 \usage{
-gdrm_control(force_intercept = TRUE, expected = TRUE)
+gdrm_control(
+  force_intercept = TRUE,
+  expected = TRUE,
+  optimizer = c("adam", "sa"),
+  optimizer_control = NULL
+)
 }
 \arguments{
-\item{force_intercept}{Logical. If \code{TRUE} (default) a global intercept is forced to the model if none linear part is present.}
+\item{force_intercept}{Logical. If \code{TRUE} (default) a global intercept is
+forced to the model if none linear part is present.}
 
-\item{expected}{Logical. If \code{TRUE} (default) use expected Fisher Information if available.}
+\item{expected}{Logical. If \code{TRUE} (default) use expected Fisher Information
+if available.}
+
+\item{optimizer}{Character string specifying the optimization method.
+Options are "adam" (default) and "sa" (simulated annealing).}
+
+\item{optimizer_control}{List of control parameters for the chosen optimizer.
+Use \code{adam_control()} for ADAM or \code{sa_control()} for simulated annealing.
+If NULL, default controls are used.}
 }
 \value{
 A list of class \code{gdrm_control}.

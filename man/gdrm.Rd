@@ -2,24 +2,44 @@
 % Please edit documentation in R/gdrm.R
 \name{gdrm}
 \alias{gdrm}
-\title{Generalized distributional regression models
-Fits generalized distributional regression models, which are models in which any parameters of a distribution can be modelled as a function (linear, non-linear or both) of covariates.}
+\title{Generalized distributional regression models}
 \usage{
-gdrm(formulae, distrib = normal1(), data, gdrm_control_list = gdrm_control())
+gdrm(
+  formulae,
+  distrib = normal1(),
+  data,
+  gdrm_control_list = gdrm_control(),
+  coef_bounds = NULL
+)
 }
 \arguments{
-\item{formulae}{A \code{formulae} object, which consists of formulas for different parameters of the model separated by \code{&} operator.}
+\item{formulae}{A \code{formulae} object, which consists of formulas for different
+parameters of the model separated by \code{&} operator.}
 
-\item{distrib}{A \verb{[distrib]} object specifying the distribution assumed for the response variable.}
+\item{distrib}{A \verb{[distrib]} object specifying the distribution assumed for
+the response variable.}
 
 \item{data}{A \code{data.frame}.}
 
 \item{gdrm_control_list}{A list created by \verb{[gdrm_control()]} function.}
+
+\item{coef_bounds}{A list of coefficient bounds. The list should contain an element for each model parameters, and any of those element should be another list containing named elements being numerical vector of lower and upper bounds for parameters.}
 }
 \value{
 An object of class \code{gdrm}.
 }
 \description{
-Generalized distributional regression models
-Fits generalized distributional regression models, which are models in which any parameters of a distribution can be modelled as a function (linear, non-linear or both) of covariates.
+Fits generalized distributional regression models, which are models in which
+any parameters of a distribution can be modelled as a function (linear,
+non-linear or both) of covariates.
+}
+\details{
+The function supports multiple optimization algorithms:
+\describe{
+\item{ADAM}{Adaptive Moment Estimation - efficient for large datasets}
+\item{SA}{Simulated Annealing - robust for complex surfaces}
+}
+
+The optimizer and its control parameters can be specified through the
+\code{gdrm_control_list} parameter.
 }
