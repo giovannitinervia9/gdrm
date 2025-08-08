@@ -5,7 +5,7 @@
 \title{Control Parameters for ADAM Optimization}
 \usage{
 adam_control(
-  maxit = 1e+05,
+  maxit = 10000,
   grad_tol = 1e-06,
   param_tol = 1e-06,
   require_both = FALSE,

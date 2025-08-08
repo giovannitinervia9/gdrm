@@ -22,7 +22,7 @@ Builds a \code{distrib} object representing a Normal distribution with mean
 \eqn{\mu} and precision \eqn{\tau^2}.
 }
 \details{
-The \code{normal3()} function generate a \code{distrib} object representing a normal distribution with parameters:
+The \code{normal3()} function generates a \code{distrib} object representing a normal distribution with parameters:
 \deqn{\bm{\theta} = (\mu, \tau^2)}
 and pdf:
 \deqn{f(y) = \sqrt{\dfrac{\tau^2}{2 \pi}} \exp \left\{-\dfrac{\tau^2 (y - \mu)^2}{2}\right\}}

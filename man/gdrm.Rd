@@ -9,7 +9,9 @@ gdrm(
   distrib = normal1(),
   data,
   gdrm_control_list = gdrm_control(),
-  coef_bounds = NULL
+  coef_bounds = NULL,
+  start_sa = F,
+  sa_control_list = sa_control()
 )
 }
 \arguments{
@@ -24,6 +26,10 @@ the response variable.}
 \item{gdrm_control_list}{A list created by \verb{[gdrm_control()]} function.}
 
 \item{coef_bounds}{A list of coefficient bounds. The list should contain an element for each model parameters, and any of those element should be another list containing named elements being numerical vector of lower and upper bounds for parameters.}
+
+\item{start_sa}{Logical. If \code{TRUE} (default) starting values are chosen with Simulated annealing optimization.}
+
+\item{sa_control_list}{A list of options returned by \code{\link[=sa_control]{sa_control()}} function to be used if \code{start_sa = TRUE}.}
 }
 \value{
 An object of class \code{gdrm}.

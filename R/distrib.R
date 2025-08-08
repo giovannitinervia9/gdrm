@@ -96,6 +96,84 @@ print.distrib <- function(x, ...) {
 }
 
 
+#' Compare Analytical and Numerical Derivatives of the Log-Likelihood
+#'
+#' Evaluates and compares the analytical (explicit) and numerical gradients 
+#' and Hessians of the log-likelihood function for a given distribution.
+#'
+#' @param distrib An object of class [`distrib`].
+#' @param x A numeric vector of observations at which the derivatives are evaluated.
+#' @param par A list containing the values of the model parameters.
+#' @param round_digits An integer specifying the number of decimal places 
+#'   to which the difference between analytical and numerical derivatives is rounded.
+#'
+#' @returns A list with two elements:
+#' \describe{
+#'   \item{\code{gradient}}{A data frame comparing the analytical and numerical gradients.}
+#'   \item{\code{hessian}}{A data frame comparing the analytical and numerical Hessians 
+#'         (diagonal and upper off-diagonal elements only).}
+#' }
+#' @examples 
+#' check_derivatives(normal1(), rnorm(100), par = list(0, 1))
+#' check_derivatives(normal2(), rnorm(100), par = list(0, 1))
+#' check_derivatives(normal3(), rnorm(100), par = list(0, 1))
+#' @export
+#' @importFrom stats setNames
+check_derivatives <- function(distrib, x, par, round_digits = 5) {
+  par_vec <- unlist(par)
+
+  ll <- function(x, par_vec) {
+    par <- as.list(par_vec)
+    distrib$loglik(x, par)
+  }
+
+  grad_dist <- unlist(distrib$grad(x, par))
+  grad_num <- numDeriv::grad(function(par_vec) ll(x, par_vec), par_vec)
+
+  hess_dist <- distrib$hess(x, par, expected = FALSE)
+  hess_num <- numDeriv::hessian(function(par_vec) ll(x, par_vec), par_vec)
+
+  # Parameter names
+  param_names <- distrib$parameters
+
+  # Gradient comparison
+  grad_df <- data.frame(
+    param = param_names,
+    grad_dist = as.numeric(grad_dist),
+    grad_num = as.numeric(grad_num)
+  )
+
+  # Function to extract diagonal + upper off-diagonal with names
+  get_upper_named <- function(mat, names) {
+    idx <- which(upper.tri(mat, diag = TRUE), arr.ind = TRUE)
+    data.frame(
+      row = names[idx[, 1]],
+      col = names[idx[, 2]],
+      value = mat[idx]
+    )
+  }
+
+  # Hessian comparison
+  hess_df <- merge(
+    get_upper_named(hess_dist, param_names) |>
+      setNames(c("row", "col", "hess_dist")),
+    get_upper_named(hess_num, param_names) |>
+      setNames(c("row", "col", "hess_num")),
+    by = c("row", "col")
+  )
+
+  grad_df$diff <- round(grad_df$grad_dist - grad_df$grad_num, round_digits)
+  hess_df$diff <- round(hess_df$hess_dist - hess_df$hess_num, round_digits)
+
+  colnames(grad_df) <- c("par", "explicit", "numerical", "difference")
+  colnames(hess_df) <- c("rowpar", "colpar", "explicit", "numerical", "difference")
+  list(
+    gradient = grad_df,
+    hessian = hess_df
+  )
+}
+
+
 #' Normal distribution (\eqn{\mu, \sigma^2} parametrization)
 #'
 #' @description
@@ -111,7 +189,7 @@ print.distrib <- function(x, ...) {
 #'   See [distrib] for the structure common to all distribution objects..
 #'
 #' @seealso [distrib] for the structure common to all distribution objects.
-#' @details The `normal1()` function generate a `distrib` object representing a normal distribution with parameters:
+#' @details The `normal1()` function generates a `distrib` object representing a normal distribution with parameters:
 #' \deqn{\bm{\theta} = (\mu, \sigma^2)}
 #' and pdf:
 #' \deqn{f(y) = \dfrac{1}{\sqrt{2 \pi \sigma^2}} \exp \left\{-\dfrac{(y - \mu)^2}{2\sigma^2}\right\}}
@@ -325,7 +403,7 @@ normal1 <- function(link_mu = "identity", link_sigma2 = "log") {
 #'   See [distrib] for the structure common to all distribution objects..
 #'
 #' @seealso [distrib] for the structure common to all distribution objects.
-#' @details The `normal2()` function generate a `distrib` object representing a normal distribution with parameters:
+#' @details The `normal2()` function generates a `distrib` object representing a normal distribution with parameters:
 #' \deqn{\bm{\theta} = (\mu, \sigma)}
 #' and pdf:
 #' \deqn{f(y) = \dfrac{1}{\sqrt{2 \pi} \sigma} \exp \left\{-\dfrac{1}{2}\left(\dfrac{y - \mu}{\sigma}\right)^2\right\}}
@@ -540,7 +618,7 @@ normal2 <- function(link_mu = "identity", link_sigma = "log") {
 #'   See [distrib] for the structure common to all distribution objects..
 #'
 #' @seealso [distrib] for the structure common to all distribution objects.
-#' @details The `normal3()` function generate a `distrib` object representing a normal distribution with parameters:
+#' @details The `normal3()` function generates a `distrib` object representing a normal distribution with parameters:
 #' \deqn{\bm{\theta} = (\mu, \tau^2)}
 #' and pdf:
 #' \deqn{f(y) = \sqrt{\dfrac{\tau^2}{2 \pi}} \exp \left\{-\dfrac{\tau^2 (y - \mu)^2}{2}\right\}}
@@ -706,6 +784,281 @@ normal3 <- function(link_mu = "identity", link_tau2 = "log") {
 
   starting_values <- function(x){
     list(mu = mean(x), tau2 = 1/var(x))
+  }
+
+  r <- list(
+    distrib = distrib,
+    link_list = link_list,
+    parameters = parameters,
+    parameters_description = parameters_description,
+    parameters_bounds = parameters_bounds,
+    E = E,
+    V = V,
+    A = A,
+    K = K,
+    Me = Me,
+    Mo = Mo,
+    pdf = pdf,
+    loglik = loglik,
+    lli = lli,
+    grad = grad,
+    hess = hess,
+    cdf = cdf,
+    qf = qf,
+    rng = rng,
+    mgf = mgf,
+    cml = cml,
+    cf = cf,
+    starting_values = starting_values,
+    distrib_args = NULL
+  )
+
+  class(r) <- "distrib"
+  r
+}
+
+
+#' Gamma distribution (\eqn{\mu, \sigma^2} parametrization)
+#'
+#' @description
+#' Builds a `distrib` object representing a Gamma distribution with mean
+#' \eqn{\mu} and variance \eqn{\sigma^2}.
+#'
+#' @param link_mu    Character string naming the link for the mean parameter
+#'                   (default `"log"`).
+#' @param link_sigma2 Character string naming the link for the variance parameter
+#'                   (default `"log"`).
+#'
+#' @return An object of class **`distrib`**.
+#'   See [distrib] for the structure common to all distribution objects..
+#'
+#' @seealso [distrib] for the structure common to all distribution objects.
+#' @details The `gamma1()` function generates a `distrib` object representing a Gamma distribution with parameters:
+#' \deqn{\bm{\theta} = (\mu, \sigma^2)}
+#' and pdf:
+#' \deqn{f(y) = \dfrac{\left(\dfrac{\mu}{\sigma^2}\right)^{\frac{\mu^2}{\sigma^2}} y ^ {\frac{\mu^2}{\sigma^2}-1} \exp\left\{ - \dfrac{\mu}{\sigma^2}y\right\}}{\Gamma\left(\dfrac{\mu^2}{\sigma^2}\right)}}
+#' @export
+#' @importFrom stats qgamma pgamma dgamma rgamma var
+gamma1 <- function(link_mu = "log", link_sigma2 = "log") {
+  distrib <- "gamma1"
+
+  parameters <- c("mu", "sigma2")
+
+  parameters_description <- c(mu = "mean", sigma2 = "variance")
+
+  parameters_bounds <- list(
+    mu = c(0, Inf),
+    sigma2 = c(0, Inf)
+  )
+
+  link_ok <- list(
+    mu = c("identity", "log", "sqrt"),
+    sigma2 = c("log", "sqrt")
+  )
+
+  link_list <- list(mu = link_mu, sigma2 = link_sigma2)
+
+  are_link_ok <- mapply(
+    function(link, link_ok) link %in% link_ok,
+    link = link_list,
+    link_ok = link_ok
+  )
+
+  if (any(!are_link_ok)) {
+    stop(paste0(
+      "admissible links are:\n",
+      paste(
+        paste0(
+          parameters,
+          ": ",
+          sapply(link_ok, function(link) paste0(link, collapse = ", "))
+        ),
+        sep = "\n",
+        collapse = "\n"
+      )
+    ))
+  }
+
+  link_list <- lapply(link_list, gdrm::make_link)
+
+  E <- function(par) {
+    par[[1]]
+  }
+
+  V <- function(par) {
+    par[[2]]
+  }
+
+  A <- function(par) {
+    2 * sqrt(par[[2]]) / par[[1]]
+  }
+
+  K <- function(par) {
+    6 * par[[2]] / par[[1]]^2
+  }
+
+  Mo <- function(par) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    ifelse(
+      mu^2 > sigma2,
+      (mu^2 - sigma2) / mu,
+      0
+    )
+  }
+
+  Me <- function(par) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    qgamma(.5, shape = mu^2 / sigma2, rate = mu / sigma2)
+  }
+
+  pdf <- function(x, par, log = FALSE) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    dgamma(x, shape = mu^2 / sigma2, rate = mu / sigma2, log = log)
+  }
+
+  lli <- function(x, par) {
+    pdf(x, par, log = TRUE)
+  }
+
+  loglik <- function(x, par) {
+    sum(pdf(x, par, log = TRUE))
+  }
+
+  grad <- function(x, par, sum = TRUE) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+
+    grad_mu <- (-2 *
+      mu *
+      digamma(mu^2 / sigma2) +
+      2 * mu * log(mu / sigma2) +
+      mu +
+      2 * mu * log(x) -
+      x) /
+      sigma2
+
+    grad_sigma2 <- -(mu *
+      (-mu *
+        digamma(mu^2 / sigma2) +
+        mu * log(mu / sigma2) +
+        mu +
+        mu * log(x) -
+        x)) /
+      sigma2^2
+    if (sum) {
+      list(mu = sum(grad_mu), sigma2 = sum(grad_sigma2))
+    } else {
+      list(mu = grad_mu, sigma2 = grad_sigma2)
+    }
+  }
+
+  hess <- function(x, par, sum = TRUE, expected = TRUE) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+
+    n <- length(x)
+    hess <- array(0, dim = c(2, 2, n))
+
+    # Common quantities
+    k <- mu^2 / sigma2
+    psi <- digamma(k) # ψ(k)
+    psi1 <- trigamma(k) # ψ₁(k)
+    lmu <- log(mu / sigma2)
+
+    if (expected) {
+      hess[1, 1, ] <- 3 / sigma2 - 4 * mu^2 * psi1 / sigma2^2
+      hess[1, 2, ] <- 2 * mu^3 * psi1 / sigma2^3 - 2 * mu / sigma2^2
+      hess[2, 1, ] <- hess[2, 2, ] <- mu^2 / sigma2^3 - mu^4 * psi1 / sigma2^4
+    } else {
+      logx <- log(x)
+
+      hess[1, 1, ] <- (-(4 * mu^2 * psi1) /
+        sigma2 -
+        2 * psi +
+        2 * lmu +
+        2 * logx +
+        3) /
+        sigma2
+
+      hess[2, 2, ] <- -(mu *
+        (2 *
+          mu *
+          sigma2 *
+          psi +
+          mu^3 * psi1 +
+          sigma2 * (-2 * mu * lmu - 3 * mu - 2 * mu * logx + 2 * x))) /
+        sigma2^4
+
+      hess[1, 2, ] <- hess[2, 1, ] <-
+        (2 *
+          mu *
+          sigma2 *
+          psi +
+          2 * mu^3 * psi1 +
+          sigma2 * (-2 * mu * lmu - 3 * mu - 2 * mu * logx + x)) /
+        sigma2^3
+    }
+
+    if (sum) {
+      apply(hess, c(1, 2), sum)
+    } else {
+      hess
+    }
+  }
+
+  cdf <- function(x, par, lower.tail = TRUE, log.p = FALSE) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    pgamma(
+      x,
+      shape = mu^2 / sigma2,
+      rate = mu / sigma2,
+      lower.tail = lower.tail,
+      log.p = log.p
+    )
+  }
+
+  qf <- function(p, par, lower.tail = TRUE, log.p = FALSE) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    qgamma(
+      p,
+      shape = mu^2 / sigma2,
+      rate = mu / sigma2,
+      lower.tail = lower.tail,
+      log.p = log.p
+    )
+  }
+
+  rng <- function(n = 1, par) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    rgamma(n, shape = mu^2 / sigma2, rate = mu / sigma2)
+  }
+
+  cml <- function(x, par) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    ifelse(x < mu / sigma2, (-mu^2 / sigma2) * log(1 - x * sigma2 / mu), NA)
+  }
+
+  mgf <- function(x, par) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    ifelse(x < mu / sigma2, (1 - x * sigma2 / mu)^(-mu^2 / sigma2), NA)
+  }
+
+  cf <- function(x, par) {
+    mu <- par[[1]]
+    sigma2 <- par[[2]]
+    (1 - (1i) * x * sigma2 / mu)^(-mu^2 / sigma2)
+  }
+
+  starting_values <- function(x) {
+    list(mu = mean(x), sigma2 = var(x))
   }
 
   r <- list(

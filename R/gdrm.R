@@ -57,6 +57,8 @@ gdrm_control <- function(
 #' @param data A `data.frame`.
 #' @param gdrm_control_list A list created by `[gdrm_control()]` function.
 #' @param coef_bounds A list of coefficient bounds. The list should contain an element for each model parameters, and any of those element should be another list containing named elements being numerical vector of lower and upper bounds for parameters.
+#' @param start_sa Logical. If `TRUE` (default) starting values are chosen with Simulated annealing optimization.
+#' @param sa_control_list A list of options returned by [`sa_control()`] function to be used if `start_sa = TRUE`.
 #' @returns An object of class `gdrm`.
 #'
 #' @details
@@ -75,7 +77,9 @@ gdrm <- function(
   distrib = normal1(),
   data,
   gdrm_control_list = gdrm_control(),
-  coef_bounds = NULL
+  coef_bounds = NULL,
+  start_sa = F,
+  sa_control_list = sa_control()
 ) {
   
   force_intercept <- gdrm_control_list$force_intercept
@@ -157,6 +161,10 @@ gdrm <- function(
     lower = hyper_bound_lower,
     upper = hyper_bound_upper
   )
+
+  if (start_sa) {
+    mod_comp <- gdrm_sa(response, mod_comp, distrib, map_functions, sa_control_list)$mod_comp
+  }
   
   # OPTIMIZATION - Track elapsed time
   start_time <- Sys.time()

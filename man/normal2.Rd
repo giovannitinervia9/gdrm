@@ -22,7 +22,7 @@ Builds a \code{distrib} object representing a Normal distribution with mean
 \eqn{\mu} and standard deviation \eqn{\sigma}.
 }
 \details{
-The \code{normal2()} function generate a \code{distrib} object representing a normal distribution with parameters:
+The \code{normal2()} function generates a \code{distrib} object representing a normal distribution with parameters:
 \deqn{\bm{\theta} = (\mu, \sigma)}
 and pdf:
 \deqn{f(y) = \dfrac{1}{\sqrt{2 \pi} \sigma} \exp \left\{-\dfrac{1}{2}\left(\dfrac{y - \mu}{\sigma}\right)^2\right\}}
